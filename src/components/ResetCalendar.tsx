@@ -43,21 +43,45 @@ function postsForSelection(
   locale: Locale,
 ): Post[] {
   const byId = new Map(product.posts.map((p) => [p.id, p]))
-  const linked = new Map<string, Post>()
-  for (const e of dayEvents) {
+  const seen = new Set<string>()
+  const specialPosts: Post[] = []
+  const otherPosts: Post[] = []
+
+  // Special-event posts first so the $200 Pro pause quote is never buried
+  // under a same-day banked-compensation tweet (common in Beijing TZ).
+  const orderedEvents = [...dayEvents].sort((a, b) => {
+    if (a.kind === 'special' && b.kind !== 'special') return -1
+    if (b.kind === 'special' && a.kind !== 'special') return 1
+    return +new Date(b.date) - +new Date(a.date)
+  })
+
+  for (const e of orderedEvents) {
     for (const id of e.postIds ?? []) {
+      if (seen.has(id)) continue
       const post = byId.get(id)
-      if (post) linked.set(post.id, post)
+      if (!post) continue
+      seen.add(id)
+      if (e.kind === 'special') specialPosts.push(post)
+      else otherPosts.push(post)
     }
   }
-  if (linked.size > 0) {
-    return [...linked.values()].sort(
-      (a, b) => +new Date(b.date) - +new Date(a.date),
-    )
-  }
+
+  if (seen.size > 0) return [...specialPosts, ...otherPosts]
+
   return product.posts
     .filter((p) => calendarDayKey(p.date, locale) === dayKey)
     .sort((a, b) => +new Date(b.date) - +new Date(a.date))
+}
+
+/** Posts linked to one event (for nesting under the day-detail event card). */
+function postsForEvent(product: ProductData, event: ResetEvent): Post[] {
+  const byId = new Map(product.posts.map((p) => [p.id, p]))
+  const out: Post[] = []
+  for (const id of event.postIds ?? []) {
+    const post = byId.get(id)
+    if (post) out.push(post)
+  }
+  return out
 }
 
 /** Visible history from HISTORY_CUTOFF */
@@ -72,16 +96,20 @@ function dayMarkerLabel(
 ): string | null {
   if (events.length === 0) return null
   const t = translations[locale]
-  // Prefer explicit special-event marker (e.g. "$200 Pro 新购暂停")
-  for (const e of events) {
-    if (e.kind !== 'special') continue
+  // Prefer explicit markerLabel on any event (special first, then others)
+  const prefer = [...events].sort((a, b) => {
+    if (a.kind === 'special' && b.kind !== 'special') return -1
+    if (b.kind === 'special' && a.kind !== 'special') return 1
+    return 0
+  })
+  for (const e of prefer) {
     const label =
       locale === 'zh'
         ? e.markerLabelZh ?? e.markerLabel
         : e.markerLabel ?? e.markerLabelZh
     if (label) return label
   }
-  // Also label 全员重置 / 发卡 / 部分重置 under the date
+  // Fallback short labels for 全员重置 / 发卡 / 部分重置 / 特殊
   const cat = primaryCategory(events)
   switch (cat) {
     case 'special':
@@ -170,7 +198,12 @@ export function ResetCalendar({ product, locale }: Props) {
     if (!selected) return []
     return allHistory
       .filter((e) => calendarDayKey(e.date, locale) === selected)
-      .sort((a, b) => +new Date(b.date) - +new Date(a.date))
+      .sort((a, b) => {
+        // Special events (e.g. $200 Pro pause) lead the day detail
+        if (a.kind === 'special' && b.kind !== 'special') return -1
+        if (b.kind === 'special' && a.kind !== 'special') return 1
+        return +new Date(b.date) - +new Date(a.date)
+      })
   }, [allHistory, selected, locale])
 
   const selectedPosts = selected
@@ -280,7 +313,7 @@ export function ResetCalendar({ product, locale }: Props) {
               <div className="grid grid-cols-7 gap-1.5">
                 {cells.map((day, idx) => {
                   if (day === null) {
-                    return <div key={`e-${idx}`} className="min-h-[4.25rem]" />
+                    return <div key={`e-${idx}`} className="min-h-[4.75rem]" />
                   }
                   const key = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
                   const dayEvents = monthEvents.get(key) ?? []
@@ -293,7 +326,7 @@ export function ResetCalendar({ product, locale }: Props) {
                       key={key}
                       type="button"
                       onClick={() => selectDay(key)}
-                      className={`flex min-h-[4.25rem] flex-col items-center justify-center rounded-xl border px-0.5 py-1 text-sm transition ${
+                      className={`flex min-h-[4.75rem] flex-col items-center justify-center rounded-xl border px-0.5 py-1 text-sm transition ${
                         isSelected
                           ? 'border-cyan-500 bg-cyan-50 text-cyan-900 shadow-[0_0_16px_rgba(6,182,212,0.18)]'
                           : hasEvents
@@ -306,7 +339,7 @@ export function ResetCalendar({ product, locale }: Props) {
                       </span>
                       {marker && (
                         <span
-                          className={`mt-0.5 max-w-full px-0.5 text-center text-[8px] leading-tight line-clamp-2 ${
+                          className={`mt-0.5 max-w-full px-0.5 text-center text-[9px] font-semibold leading-tight line-clamp-2 ${
                             cat === 'special'
                               ? 'text-amber-700'
                               : cat === 'all_reset'
@@ -385,9 +418,10 @@ export function ResetCalendar({ product, locale }: Props) {
                         {statusTitle(selectedPrimaryKind, name, locale)}
                       </div>
                     )}
-                    <ul className="space-y-2">
+                    <ul className="space-y-3">
                       {selectedEvents.map((e) => {
                         const cat = eventCategory(e)
+                        const eventPosts = postsForEvent(product, e)
                         return (
                           <li
                             key={`${e.date}-${e.kind}-${e.note}`}
@@ -415,25 +449,47 @@ export function ResetCalendar({ product, locale }: Props) {
                             <div className="mt-1 rr-mono text-[11px] text-slate-400">
                               {formatDateTime(e.date, locale)}
                             </div>
+                            {eventPosts.length > 0 && (
+                              <div className="mt-2 space-y-2 border-t border-slate-100 pt-2">
+                                {eventPosts.map((p) => (
+                                  <PostCard key={p.id} post={p} locale={locale} />
+                                ))}
+                              </div>
+                            )}
                           </li>
                         )
                       })}
                     </ul>
 
-                    <div className="mb-2 mt-4 text-xs font-medium uppercase tracking-wider text-slate-500">
-                      {selectedPosts.length > 0
-                        ? feedTitle(product, locale)
-                        : t.linkedPosts}
-                    </div>
-                    <div className="space-y-3">
-                      {selectedPosts.length > 0 ? (
-                        selectedPosts.map((p) => (
-                          <PostCard key={p.id} post={p} locale={locale} />
-                        ))
-                      ) : (
-                        <p className="text-xs text-slate-500">{t.noUrl}</p>
-                      )}
-                    </div>
+                    {(() => {
+                      const nestedIds = new Set(
+                        selectedEvents.flatMap((e) => e.postIds ?? []),
+                      )
+                      const orphans = selectedPosts.filter(
+                        (p) => !nestedIds.has(p.id),
+                      )
+                      if (orphans.length === 0 && selectedPosts.length > 0) {
+                        return null
+                      }
+                      return (
+                        <>
+                          <div className="mb-2 mt-4 text-xs font-medium uppercase tracking-wider text-slate-500">
+                            {orphans.length > 0
+                              ? feedTitle(product, locale)
+                              : t.linkedPosts}
+                          </div>
+                          <div className="space-y-3">
+                            {orphans.length > 0 ? (
+                              orphans.map((p) => (
+                                <PostCard key={p.id} post={p} locale={locale} />
+                              ))
+                            ) : selectedPosts.length === 0 ? (
+                              <p className="text-xs text-slate-500">{t.noUrl}</p>
+                            ) : null}
+                          </div>
+                        </>
+                      )
+                    })()}
                   </>
                 )}
               </>

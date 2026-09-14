@@ -153,7 +153,10 @@ export function futureResetEstimates(
     }
   }
 
-  return out.slice(0, limit)
+  // Final guard: UI must never receive a past next-window
+  return out
+    .filter((f) => f.date.getTime() > now.getTime())
+    .slice(0, limit)
 }
 
 /**

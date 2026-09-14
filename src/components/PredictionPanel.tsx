@@ -45,7 +45,10 @@ export function PredictionPanel({
 }: Props) {
   const t = translations[locale]
   const last = lastResetDate(product)
-  const futures = futureResetEstimates(product, now, 2)
+  // Belt-and-suspenders: never render a past / overdue datetime
+  const futures = futureResetEstimates(product, now, 2).filter(
+    (f) => f.date.getTime() > now.getTime(),
+  )
   const p24 = probability24h(product, now)
 
   if (!last) return null

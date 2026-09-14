@@ -143,7 +143,8 @@ export const products: ProductData[] = [
       },
       {
         id: 'codex-2026-09-10-pro-pause',
-        date: '2026-09-10T16:00:00.000Z',
+        // 08:00 UTC = Sep 10 16:00 Beijing (not midnight Sep 11); still Sep 10 ET morning
+        date: '2026-09-10T08:00:00.000Z',
         summary:
           'To make sure our current users have an incredible experience and continued access to Astra, we are going to pause subscriptions to our $200 Pro plan. These put the most strain on our systems and we wanted to take the smallest step that allows us to continue giving the broadest access possible. All other plans and the api remain available. There is no impact to existing accounts and we are working on adding more capacity as fast as we can. Thanks!',
         summaryZh:
