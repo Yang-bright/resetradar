@@ -68,17 +68,17 @@ export default function App() {
           </p>
         )}
 
-        {/* Primary: LAST RESET + Tibo post */}
+        {/* Primary: last reset + product-specific related post */}
         <div className="mb-4">
           <StatusHero product={activeProduct} locale={locale} now={now} />
         </div>
 
-        {/* Optional one-line next-window hint — no daily bars */}
+        {/* Compact next-reset + 24h probability (illustrative) */}
         <div className="mb-8">
           <PredictionPanel product={activeProduct} locale={locale} now={now} />
         </div>
 
-        {/* Secondary: calendar → click for day detail + Tibo */}
+        {/* Calendar → click for day detail + related posts */}
         <div className="mb-10">
           <ResetCalendar product={activeProduct} locale={locale} />
         </div>

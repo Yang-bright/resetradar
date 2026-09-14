@@ -24,6 +24,7 @@ import {
   parseDayKey,
   zoneHint,
 } from '../utils/time'
+import { feedTitle } from '../utils/feedTitle'
 import { PostCard } from './PostCard'
 
 interface Props {
@@ -335,7 +336,7 @@ export function ResetCalendar({ product, locale }: Props) {
               </div>
 
               <div className="mb-2 text-xs font-medium uppercase tracking-wider text-slate-500">
-                {t.linkedPosts}
+                {selectedPosts.length > 0 ? feedTitle(product, locale) : t.linkedPosts}
               </div>
               <div className="space-y-3">
                 {selectedPosts.length > 0 ? (

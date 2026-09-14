@@ -9,11 +9,17 @@ interface Props {
   locale: Locale
 }
 
-const TIBO_AVATAR = '/tibo-avatar.jpg'
+const AVATARS: Record<string, string> = {
+  '@thsottiaux': '/tibo-avatar.jpg',
+  '@elonmusk': '/elon-avatar.jpg',
+  '@AnthropicAI': '/anthropic-avatar.jpg',
+  '@claudeai': '/anthropic-avatar.jpg',
+  '@bcherny': '/bcherny-avatar.jpg',
+}
 
 function avatarSrc(post: Post): string | undefined {
   if (post.avatarUrl) return post.avatarUrl
-  if (post.handle === '@thsottiaux') return TIBO_AVATAR
+  if (post.handle && AVATARS[post.handle]) return AVATARS[post.handle]
   return undefined
 }
 

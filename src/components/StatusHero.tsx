@@ -10,6 +10,7 @@ import {
   formatWeekday,
   zoneHint,
 } from '../utils/time'
+import { feedTitle } from '../utils/feedTitle'
 import { PostCard } from './PostCard'
 
 interface Props {
@@ -72,7 +73,7 @@ export function StatusHero({ product, locale, now }: Props) {
       {latestPost && (
         <div className="mt-6">
           <div className="mb-2 text-xs font-medium uppercase tracking-wider text-slate-500">
-            {t.posts}
+            {feedTitle(product, locale)}
           </div>
           <PostCard post={latestPost} locale={locale} />
         </div>
