@@ -11,7 +11,7 @@ export function LocaleToggle({ locale, onToggle, label }: Props) {
     <button
       type="button"
       onClick={onToggle}
-      className="rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-sm font-medium text-slate-600 shadow-sm shadow-slate-900/5 transition hover:border-indigo-200 hover:text-indigo-700"
+      className="rounded-full border border-white/15 bg-white/5 px-3.5 py-1.5 text-sm font-medium text-slate-300 transition hover:border-cyan-400/40 hover:text-cyan-200"
       aria-label={label}
     >
       {locale === 'zh' ? 'EN' : '中文'}

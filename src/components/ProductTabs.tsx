@@ -11,7 +11,7 @@ interface Props {
 export function ProductTabs({ active, locale, onChange }: Props) {
   return (
     <div
-      className="inline-flex flex-wrap gap-1 rounded-2xl border border-slate-200/80 bg-slate-100/80 p-1.5 shadow-inner"
+      className="inline-flex flex-wrap gap-1 rounded-2xl border border-white/10 bg-[#0b1018] p-1.5"
       role="tablist"
     >
       {products.map((p) => {
@@ -26,8 +26,8 @@ export function ProductTabs({ active, locale, onChange }: Props) {
             onClick={() => onChange(p.id)}
             className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
               isActive
-                ? 'bg-white text-indigo-700 shadow-sm shadow-slate-900/10 ring-1 ring-slate-200/80'
-                : 'text-slate-500 hover:text-slate-800'
+                ? 'bg-gradient-to-r from-cyan-500/20 to-fuchsia-500/20 text-cyan-200 ring-1 ring-cyan-400/40'
+                : 'text-slate-500 hover:text-slate-200'
             }`}
           >
             {name}

@@ -1,14 +1,14 @@
 # 重置雷达 / ResetRadar
 
-Unofficial bilingual tracker for **official / global usage resets** of:
+Unofficial bilingual **scan deck** for public / global usage resets of:
 
-1. **Codex** (OpenAI)
+1. **Codex** (OpenAI) — primary, seeded from whenreset.dev + codex-reset.com/timeline
 2. **Claude Code** (Anthropic)
 3. **Grok Bot** (xAI / Grok)
 
-Inspired by whenreset.dev-style cadence tracking. Not affiliated with OpenAI, Anthropic, or xAI.
+Dark radar identity (cyan / magenta on charcoal) with a **timeline-first** layout. Not affiliated with OpenAI, Anthropic, or xAI.
 
-站点页脚占位域名：`resetradar.app`
+Footer placeholder: `resetradar.app`
 
 ---
 
@@ -16,11 +16,12 @@ Inspired by whenreset.dev-style cadence tracking. Not affiliated with OpenAI, An
 
 ### 功能
 
-- 总览三卡：最近重置、预计下次、24 小时内重置概率
-- 按产品分区：关键人物、相关动态、估算+倒计时、概率、历史表（≥ 2026-09-10）
+- 扫描台状态：最近命中、示意下次窗口、24h 示意概率、中位间隔（显示 n）
+- **时间线主视图**（自 2026-08-01）+ 月份切片；点击节点 / 日期查看 Tibo 帖文摘要
+- 产品切换：Codex / Claude Code / Grok Bot
 - 默认中文；语言切换写入 `localStorage`
-- 中文时间：**北京时间**（Asia/Shanghai）；英文时间：**ET**（America/New_York）
-- 原始数据一律存 **UTC ISO**，仅在展示时转换
+- 中文时间：**北京时间**；英文时间：**ET**
+- 原始数据一律 **UTC ISO**
 
 ### 本地运行
 
@@ -29,30 +30,24 @@ npm install
 npm run dev
 ```
 
-生产构建：
-
 ```bash
-npm run build
-npm run preview
+npm run build && npm run preview
 ```
 
 ### 编辑数据
-
-种子数据在：
 
 ```
 src/data/resets.ts
 ```
 
-修改事件、人物或文案后重新 `npm run build` 即可。请勿虚构推文 URL 或账号 handle。
+请勿虚构推文 ID / URL；未知时使用公开主页链接（如 `https://x.com/thsottiaux`）。
 
-### 估算说明（简）
+### 概率方法（简）
 
-- 下次重置 ≈ 最近一次计入估算的重置 + 相邻 `usage_reset`（或同类）事件的**中位间隔**
-- 数据点不足时回退到文档/种子中位值（Codex ~3.3 天，Claude ~7.1 天，Grok 更稀疏）
-- 24h 概率为启发式，接近/超过中位间隔时升高；样本过少时下调
+- 中位间隔：相邻计入估算的用量类重置；长历史取近 10 个间隔；不足则回退文档中位值
+- 24h / 近日条形：**示意 / illustrative**，非预报；n 小时有提示
 
-**免责声明**：节奏估算 ≠ 官方承诺；个人 5 小时 / 周限额 ≠ 全局重置。
+**免责声明**：节奏估算 ≠ 官方承诺；个人限额 ≠ 全局重置。
 
 ---
 
@@ -60,41 +55,11 @@ src/data/resets.ts
 
 ### Features
 
-- Hero + three overview cards (last reset, estimated next, 24h probability)
-- Per-product sections: people, posts, estimate + countdown, probability, history (≥ 2026-09-10)
-- Default locale: **zh**; toggle persists in `localStorage`
-- zh times: **Beijing time** (Asia/Shanghai); en times: **ET** (America/New_York)
-- Store ISO UTC in data; convert for display only
-
-### Run locally
-
-```bash
-npm install
-npm run dev
-```
-
-Build:
-
-```bash
-npm run build
-npm run preview
-```
-
-### Edit data
-
-```
-src/data/resets.ts
-```
-
-Do not invent tweet URLs or handles. Times in that file are UTC.
-
-### Methodology (short)
-
-- Next ≈ last estimate-eligible reset + **median gap** between consecutive `usage_reset`-like events
-- Falls back to documented medians when samples are sparse
-- 24h probability is a heuristic (rises toward/overdue median; dampened for sparse data)
-
-**Disclaimer:** Cadence estimates are not official. Personal 5h/weekly limits ≠ global resets.
+- Scan status: last hit, illustrative next window, 24h illustrative probability, median gap (with n)
+- **Timeline-first** view (from 2026-08-01) + secondary month slice; day click → Tibo post cards
+- Product switcher: Codex / Claude Code / Grok Bot
+- Default locale **zh**; toggle persists in `localStorage`
+- zh: Beijing time; en: US Eastern (ET)
 
 ### Stack
 

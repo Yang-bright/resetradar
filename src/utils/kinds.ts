@@ -2,7 +2,7 @@ import type { ResetKind } from '../data/resets'
 import type { Locale } from '../i18n/translations'
 import { translations } from '../i18n/translations'
 
-/** ResetRadar accent: indigo for full reset, rose for cards, violet for tokens */
+/** ResetRadar accent: cyan for usage, magenta for banked cards, violet for tokens */
 export function kindLabel(kind: ResetKind, locale: Locale): string {
   const t = translations[locale]
   switch (kind) {
@@ -20,26 +20,39 @@ export function kindLabel(kind: ResetKind, locale: Locale): string {
 export function kindChipClass(kind: ResetKind): string {
   switch (kind) {
     case 'usage_reset':
-      return 'bg-indigo-50 text-indigo-700 ring-indigo-200/80'
+      return 'bg-cyan-500/15 text-cyan-300 ring-cyan-400/30'
     case 'reset_card':
-      return 'bg-rose-50 text-rose-700 ring-rose-200/80'
+      return 'bg-fuchsia-500/15 text-fuchsia-300 ring-fuchsia-400/30'
     case 'token_reset':
-      return 'bg-violet-50 text-violet-700 ring-violet-200/80'
+      return 'bg-violet-500/15 text-violet-300 ring-violet-400/30'
     default:
-      return 'bg-slate-50 text-slate-600 ring-slate-200/80'
+      return 'bg-amber-500/10 text-amber-200/90 ring-amber-400/25'
   }
 }
 
 export function kindDotClass(kind: ResetKind): string {
   switch (kind) {
     case 'usage_reset':
-      return 'bg-indigo-500'
+      return 'bg-cyan-400'
     case 'reset_card':
-      return 'bg-rose-400'
+      return 'bg-fuchsia-400'
     case 'token_reset':
-      return 'bg-violet-500'
+      return 'bg-violet-400'
     default:
-      return 'bg-slate-400'
+      return 'bg-amber-300'
+  }
+}
+
+export function kindSpineClass(kind: ResetKind): string {
+  switch (kind) {
+    case 'usage_reset':
+      return 'border-cyan-400/70 bg-cyan-400 shadow-[0_0_12px_rgba(34,211,238,0.55)]'
+    case 'reset_card':
+      return 'border-fuchsia-400/70 bg-fuchsia-400 shadow-[0_0_12px_rgba(232,121,249,0.5)]'
+    case 'token_reset':
+      return 'border-violet-400/70 bg-violet-400 shadow-[0_0_12px_rgba(167,139,250,0.5)]'
+    default:
+      return 'border-amber-300/60 bg-amber-300 shadow-[0_0_10px_rgba(252,211,77,0.4)]'
   }
 }
 
@@ -49,26 +62,14 @@ export function statusTitle(
   locale: Locale,
 ): string {
   const t = translations[locale]
-  if (locale === 'zh') {
-    switch (kind) {
-      case 'usage_reset':
-        return `${productName} ${t.statusResetComplete}`
-      case 'reset_card':
-        return `${productName} ${t.statusCardIssued}`
-      case 'token_reset':
-        return `${productName} ${t.statusTokenReset}`
-      default:
-        return `${productName} ${t.statusOther}`
-    }
-  }
   switch (kind) {
     case 'usage_reset':
-      return `${productName} ${t.statusResetComplete}`
+      return `${productName} · ${t.statusResetComplete}`
     case 'reset_card':
-      return `${productName} ${t.statusCardIssued}`
+      return `${productName} · ${t.statusCardIssued}`
     case 'token_reset':
-      return `${productName} ${t.statusTokenReset}`
+      return `${productName} · ${t.statusTokenReset}`
     default:
-      return `${productName} ${t.statusOther}`
+      return `${productName} · ${t.statusOther}`
   }
 }

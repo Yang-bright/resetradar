@@ -46,11 +46,13 @@ export function medianGapDays(product: ProductData): {
     const older = +new Date(events[i + 1]!.date)
     gaps.push((newer - older) / MS_PER_DAY)
   }
-  const m = median(gaps)
+  // Prefer recent cadence (last 10 gaps) when history is long — matches whenreset.dev style
+  const recent = gaps.slice(0, 10)
+  const m = median(recent)
   return {
     days: m ?? product.documentedMedianDays,
     fromData: m !== null,
-    sampleGaps: gaps.length,
+    sampleGaps: recent.length,
   }
 }
 
