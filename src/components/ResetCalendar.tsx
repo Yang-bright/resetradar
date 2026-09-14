@@ -70,12 +70,31 @@ function dayMarkerLabel(
   events: ResetEvent[],
   locale: Locale,
 ): string | null {
+  if (events.length === 0) return null
+  const t = translations[locale]
+  // Prefer explicit special-event marker (e.g. "$200 Pro 新购暂停")
   for (const e of events) {
     if (e.kind !== 'special') continue
-    const label = locale === 'zh' ? e.markerLabelZh ?? e.markerLabel : e.markerLabel ?? e.markerLabelZh
+    const label =
+      locale === 'zh'
+        ? e.markerLabelZh ?? e.markerLabel
+        : e.markerLabel ?? e.markerLabelZh
     if (label) return label
   }
-  return null
+  // Also label 全员重置 / 发卡 / 部分重置 under the date
+  const cat = primaryCategory(events)
+  switch (cat) {
+    case 'special':
+      return t.catSpecial
+    case 'all_reset':
+      return t.markerAllReset
+    case 'reset_card':
+      return t.markerCard
+    case 'affected_reset':
+      return t.markerAffected
+    default:
+      return null
+  }
 }
 
 const LEGEND_CATS: EventCategory[] = [
@@ -261,7 +280,7 @@ export function ResetCalendar({ product, locale }: Props) {
               <div className="grid grid-cols-7 gap-1.5">
                 {cells.map((day, idx) => {
                   if (day === null) {
-                    return <div key={`e-${idx}`} className="min-h-[3.75rem]" />
+                    return <div key={`e-${idx}`} className="min-h-[4.25rem]" />
                   }
                   const key = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
                   const dayEvents = monthEvents.get(key) ?? []
@@ -274,7 +293,7 @@ export function ResetCalendar({ product, locale }: Props) {
                       key={key}
                       type="button"
                       onClick={() => selectDay(key)}
-                      className={`flex min-h-[3.75rem] flex-col items-center justify-center rounded-xl border px-0.5 py-1 text-sm transition ${
+                      className={`flex min-h-[4.25rem] flex-col items-center justify-center rounded-xl border px-0.5 py-1 text-sm transition ${
                         isSelected
                           ? 'border-cyan-500 bg-cyan-50 text-cyan-900 shadow-[0_0_16px_rgba(6,182,212,0.18)]'
                           : hasEvents
@@ -286,7 +305,19 @@ export function ResetCalendar({ product, locale }: Props) {
                         {day}
                       </span>
                       {marker && (
-                        <span className="mt-0.5 max-w-full px-0.5 text-center text-[8px] leading-tight text-amber-700 line-clamp-2">
+                        <span
+                          className={`mt-0.5 max-w-full px-0.5 text-center text-[8px] leading-tight line-clamp-2 ${
+                            cat === 'special'
+                              ? 'text-amber-700'
+                              : cat === 'all_reset'
+                                ? 'text-cyan-700'
+                                : cat === 'affected_reset'
+                                  ? 'text-orange-700'
+                                  : cat === 'reset_card'
+                                    ? 'text-fuchsia-700'
+                                    : 'text-slate-600'
+                          }`}
+                        >
                           {marker}
                         </span>
                       )}

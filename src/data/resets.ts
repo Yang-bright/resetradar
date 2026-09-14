@@ -142,6 +142,19 @@ export const products: ProductData[] = [
         url: TIBO_PROFILE,
       },
       {
+        id: 'codex-2026-09-10-pro-pause',
+        date: '2026-09-10T16:00:00.000Z',
+        summary:
+          'To make sure our current users have an incredible experience and continued access to Astra, we are going to pause subscriptions to our $200 Pro plan. These put the most strain on our systems and we wanted to take the smallest step that allows us to continue giving the broadest access possible. All other plans and the api remain available. There is no impact to existing accounts and we are working on adding more capacity as fast as we can. Thanks!',
+        summaryZh:
+          '为确保现有用户有出色体验并持续使用 Astra，我们将暂停 $200 Pro 计划的新订阅。这类订阅对系统压力最大，我们希望采取最小必要措施，以继续覆盖尽可能广泛的用户。其他计划与 API 仍可用；现有账户不受影响，我们正尽快扩容。谢谢！',
+        author: 'Tibo',
+        authorZh: 'Tibo',
+        handle: '@thsottiaux',
+        avatarInitials: 'TS',
+        url: TIBO_PROFILE,
+      },
+      {
         id: 'codex-2026-09-08-land',
         date: '2026-09-08T04:05:00.000Z',
         summary: 'All reset for everyone. Enjoy the week with Astra.',
@@ -405,6 +418,7 @@ export const products: ProductData[] = [
         noteZh: '$200 Pro（Pro 20X）新购/升级暂停（Astra 需求）；现有订阅不受影响。公开来源：OpenAI 帮助中心 as of 2026-09-10（亦见 Tibo / The Verge）。',
         countsForEstimate: false,
         inMainHistory: true,
+        postIds: ['codex-2026-09-10-pro-pause'],
         markerLabel: '$200 Pro pause',
         markerLabelZh: '$200 Pro 新购暂停',
       },
