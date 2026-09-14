@@ -2,9 +2,9 @@ import type { Post, ProductData } from '../data/resets'
 import type { Locale } from '../i18n/translations'
 import { translations } from '../i18n/translations'
 import {
+  estimateSlotProbability,
   futureResetEstimates,
   lastResetDate,
-  probability24h,
   type EstimateKind,
 } from '../utils/estimates'
 import { formatCountdown, formatDateTime } from '../utils/time'
@@ -33,7 +33,7 @@ function estimateKindLabel(kind: EstimateKind, locale: Locale): string {
 }
 
 /**
- * Next-reset window(s) + compact 24h probability.
+ * Next-reset window(s) with each row's own illustrative probability.
  * Never renders a past / overdue datetime — shows 暂无 instead.
  */
 export function PredictionPanel({
@@ -49,11 +49,9 @@ export function PredictionPanel({
   const futures = futureResetEstimates(product, now, 2).filter(
     (f) => f.date.getTime() > now.getTime(),
   )
-  const p24 = probability24h(product, now)
 
   if (!last) return null
 
-  const pct = Math.round(p24 * 100)
   const shell = embedded
     ? 'flex h-full min-h-0 flex-col rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 sm:px-5'
     : 'flex flex-col rounded-2xl border border-slate-200 bg-white px-4 py-3.5 shadow-sm sm:px-5'
@@ -72,6 +70,8 @@ export function PredictionPanel({
         <ul className="mt-2 space-y-3">
           {futures.map((est, i) => {
             const countdown = formatCountdown(est.date, now, locale)
+            const p = estimateSlotProbability(product, est, now, futures)
+            const pct = Math.round(p * 100)
             return (
               <li key={`${est.kind}-${est.date.toISOString()}`}>
                 {futures.length > 1 && (
@@ -86,28 +86,31 @@ export function PredictionPanel({
                 {countdown && !countdown.overdue && (
                   <p className="mt-1 text-xs text-slate-500">{countdown.text}</p>
                 )}
+                <div className="mt-2 flex items-baseline justify-between gap-2">
+                  <span className="text-[10px] font-medium uppercase tracking-wider text-slate-500">
+                    {t.windowProb}
+                  </span>
+                  <span className="rr-mono text-sm font-semibold tabular-nums text-cyan-700">
+                    {pct}%
+                  </span>
+                </div>
+                <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-slate-200">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-fuchsia-500"
+                    style={{ width: `${Math.max(4, pct)}%` }}
+                  />
+                </div>
               </li>
             )
           })}
         </ul>
       )}
 
-      <div className="mt-3 border-t border-slate-200 pt-3">
-        <div className="flex items-baseline justify-between gap-2">
-          <span className="text-[11px] font-medium uppercase tracking-wider text-slate-500">
-            {t.prob24h}
-          </span>
-          <span className="rr-mono text-xl font-semibold tabular-nums text-cyan-700">
-            {pct}%
-          </span>
-        </div>
-        <div className="mt-2 h-1 overflow-hidden rounded-full bg-slate-200">
-          <div
-            className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-fuchsia-500"
-            style={{ width: `${Math.max(4, pct)}%` }}
-          />
-        </div>
-      </div>
+      {futures.length > 0 && (
+        <p className="mt-3 text-[10px] leading-relaxed text-slate-400">
+          {t.probDisclaimer}
+        </p>
+      )}
 
       {upcomingPosts.length > 0 && (
         <div className="mt-4 border-t border-slate-200 pt-3">

@@ -754,8 +754,8 @@ export const products: ProductData[] = [
     ],
     documentedMedianDays: 14,
     caveat:
-      'Few data points — treat next-reset estimates and 24h probability as illustrative only.',
+      'Few data points — treat next-reset estimates and window probabilities as illustrative only.',
     caveatZh:
-      '数据点很少 — 下次重置估算与 24 小时概率仅供参考（示意）。',
+      '数据点很少 — 下次重置估算与窗口示意概率仅供参考。',
   },
 ]

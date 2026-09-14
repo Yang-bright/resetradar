@@ -8,6 +8,10 @@ export const translations = {
     lastReset: '最近重置',
     estimatedNext: '预计下次',
     prob24h: '24h 示意概率',
+    windowProb: '该窗口示意概率',
+    probDisclaimer: '示意概率，非官方预报',
+    monthEmpty: '本月暂无公开全局重置记录',
+    monthCountNote: '按北京时间日期统计',
     overdue: '已越过中位窗口',
     people: '关键人物',
     posts: '相关动态',
@@ -32,7 +36,7 @@ export const translations = {
     methodology: `ResetRadar 的「示意」数字不是官方预报，也不是保证。
 
 1) 中位间隔：取 consecutive、计入估算的用量类重置（usage_reset / token_reset）之间的间隔天数，算中位数；样本不足时回退到文档中位值（Codex ≈ 3.3 天，来自 whenreset.dev 近 10 次）。
-2) 24h 示意概率：随「距上次重置 / 中位间隔」升高；接近或越过中位窗口时更高，并设上限。事件很少时会整体下调。
+2) 各「预计下次」窗口旁的示意概率：相对该窗口的接近程度（多窗口时为相对份额）；事件很少时会整体下调。
 3) 近日条形：在预计日附近放一个软峰（高斯状），再夹到约 2%–55%，并标注「示意 / illustrative」。
 
 界面会显示样本量 n；n 较小时请当作弱信号。原始时间一律 UTC ISO；中文界面显示北京时间，英文界面显示美国东部时间（ET）。`,
@@ -120,6 +124,10 @@ export const translations = {
     lastReset: 'Last reset',
     estimatedNext: 'Next estimate',
     prob24h: '24h illustrative probability',
+    windowProb: 'Window illustrative probability',
+    probDisclaimer: 'Illustrative only — not an official forecast',
+    monthEmpty: 'No public global resets recorded this month',
+    monthCountNote: 'Counted by display-timezone calendar days',
     overdue: 'Past median window',
     people: 'Key people',
     posts: 'Related posts',
@@ -144,7 +152,7 @@ export const translations = {
     methodology: `ResetRadar “illustrative” numbers are not an official forecast and not a guarantee.
 
 1) Median gap: take consecutive estimate-eligible usage-class resets (usage_reset / token_reset), compute the median interval in days; if the sample is too small, fall back to a documented median (Codex ≈ 3.3d from whenreset.dev last-10).
-2) 24h illustrative probability: rises with elapsed/median; higher near or past the median window, with a cap. Sparse histories are dampened.
+2) Per next-window illustrative probability: rises near that slot (relative share when multiple); sparse histories are dampened.
 3) Near-term bars: soft Gaussian-ish mass peaking near the estimate, clamped roughly 2%–55%, labeled 示意 / illustrative.
 
 The UI shows sample size n; when n is small, treat bars as weak signal. All timestamps are UTC ISO; Chinese UI uses Beijing time, English UI uses US Eastern (ET).`,

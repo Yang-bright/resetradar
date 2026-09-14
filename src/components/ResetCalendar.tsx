@@ -177,22 +177,54 @@ export function ResetCalendar({ product, locale }: Props) {
     return map
   }, [allHistory, locale, viewYear, viewMonth])
 
+  // Count distinct display-TZ calendar days per category (matches grid dots)
   const monthCounts = useMemo(() => {
-    let all = 0
-    let affected = 0
-    let card = 0
-    let special = 0
-    for (const list of monthEvents.values()) {
+    const all = new Set<string>()
+    const affected = new Set<string>()
+    const card = new Set<string>()
+    const special = new Set<string>()
+    for (const [key, list] of monthEvents.entries()) {
       for (const e of list) {
         const cat = eventCategory(e)
-        if (cat === 'all_reset') all++
-        else if (cat === 'affected_reset') affected++
-        else if (cat === 'reset_card') card++
-        else if (cat === 'special') special++
+        if (cat === 'all_reset') all.add(key)
+        else if (cat === 'affected_reset') affected.add(key)
+        else if (cat === 'reset_card') card.add(key)
+        else if (cat === 'special') special.add(key)
       }
     }
-    return { all, affected, card, special }
+    return {
+      all: all.size,
+      affected: affected.size,
+      card: card.size,
+      special: special.size,
+    }
   }, [monthEvents])
+
+  /** Latest event day key in a given display month, or null if empty. */
+  const pickMonthSelection = (year: number, monthIndex: number): string | null => {
+    const keys: string[] = []
+    for (const e of allHistory) {
+      const key = calendarDayKey(e.date, locale)
+      const [y, m] = key.split('-').map(Number)
+      if (y === year && m === monthIndex + 1) keys.push(key)
+    }
+    keys.sort()
+    return keys.length > 0 ? keys[keys.length - 1]! : null
+  }
+
+  // Safety net: if selection drifts outside the visible month, resync
+  useEffect(() => {
+    if (selected) {
+      const [y, m] = selected.split('-').map(Number)
+      if (y === viewYear && m === viewMonth + 1) return
+    } else if (monthEvents.size === 0) {
+      return
+    }
+    const keys = [...monthEvents.keys()].sort()
+    setSelected(keys.length === 0 ? null : keys[keys.length - 1]!)
+    // Only when the visible month (or its events) changes — not on every selectDay
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewYear, viewMonth, monthEvents])
 
   const selectedEvents = useMemo(() => {
     if (!selected) return []
@@ -215,16 +247,18 @@ export function ResetCalendar({ product, locale }: Props) {
   const selectedPrimaryKind = selectedEvents[0]?.kind
 
   const goPrev = () => {
-    if (viewMonth === 0) {
-      setViewYear((y) => y - 1)
-      setViewMonth(11)
-    } else setViewMonth((m) => m - 1)
+    const y = viewMonth === 0 ? viewYear - 1 : viewYear
+    const m = viewMonth === 0 ? 11 : viewMonth - 1
+    setViewYear(y)
+    setViewMonth(m)
+    setSelected(pickMonthSelection(y, m))
   }
   const goNext = () => {
-    if (viewMonth === 11) {
-      setViewYear((y) => y + 1)
-      setViewMonth(0)
-    } else setViewMonth((m) => m + 1)
+    const y = viewMonth === 11 ? viewYear + 1 : viewYear
+    const m = viewMonth === 11 ? 0 : viewMonth + 1
+    setViewYear(y)
+    setViewMonth(m)
+    setSelected(pickMonthSelection(y, m))
   }
   const goLatest = () => {
     setSelected(latestKey)
@@ -288,7 +322,8 @@ export function ResetCalendar({ product, locale }: Props) {
       </div>
 
       <div className="mb-4 text-xs leading-relaxed text-slate-600 sm:text-sm">
-        {monthSummary}
+        <div>{monthSummary}</div>
+        <div className="mt-1 text-[11px] text-slate-400">{t.monthCountNote}</div>
       </div>
 
       {allHistory.length === 0 ? (
@@ -495,7 +530,7 @@ export function ResetCalendar({ product, locale }: Props) {
               </>
             ) : (
               <p className="py-10 text-center text-sm text-slate-500">
-                {t.selectDay}
+                {monthEvents.size === 0 ? t.monthEmpty : t.selectDay}
               </p>
             )}
           </div>

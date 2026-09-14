@@ -160,38 +160,60 @@ export function futureResetEstimates(
 }
 
 /**
- * 24h reset probability heuristic:
- * - Before the estimated next: rises from ~5% to ~55% as we approach the median gap.
- * - At/after overdue: climbs toward ~85% (caps), reflecting higher chance soon.
- * Not an official forecast — illustrative only.
+ * Illustrative probability for one specific next-window estimate.
+ * Higher when that slot is nearer; when multiple slots exist, shares are
+ * relative so each row has its own figure (not a global 24h block).
+ * Not an official forecast.
  */
-export function probability24h(product: ProductData, now: Date = new Date()): number {
-  const last = lastResetDate(product)
-  const next = estimatedNextReset(product)
+export function estimateSlotProbability(
+  product: ProductData,
+  estimate: FutureEstimate,
+  now: Date = new Date(),
+  siblings: FutureEstimate[] = [],
+): number {
   const { days: medianDays } = medianGapDays(product)
-  if (!last || !next || medianDays <= 0) return 0.08
-
-  const elapsedDays = (now.getTime() - last.getTime()) / MS_PER_DAY
-  const progress = elapsedDays / medianDays // 1.0 = at estimate
-
-  let p: number
-  if (progress < 0.35) {
-    p = 0.05 + progress * 0.15
-  } else if (progress < 1) {
-    const t = (progress - 0.35) / 0.65
-    p = 0.1 + t * 0.45
-  } else {
-    const overdueDays = elapsedDays - medianDays
-    const t = Math.min(1, overdueDays / Math.max(1, medianDays * 0.5))
-    p = 0.55 + t * 0.3
-  }
-
   const events = estimateEvents(product)
-  if (events.length < 2) {
-    p *= 0.65
+  const sparse = events.length < 2
+  const sigma = Math.max(1.2, (medianDays > 0 ? medianDays : 3) * 0.4)
+
+  const daysUntil = (estimate.date.getTime() - now.getTime()) / MS_PER_DAY
+  if (daysUntil <= 0) {
+    return sparse ? 0.32 : 0.52
   }
 
-  return Math.max(0.03, Math.min(0.9, p))
+  // Soft peak near the window
+  let p = 0.5 * Math.exp(-(daysUntil * daysUntil) / (2 * sigma * sigma))
+  p = Math.max(0.06, p)
+
+  // Relative share among concurrent estimate rows
+  const pool = siblings.length > 0 ? siblings : [estimate]
+  if (pool.length > 1) {
+    const weights = pool.map((e) => {
+      const d = Math.max(0.2, (e.date.getTime() - now.getTime()) / MS_PER_DAY)
+      return Math.exp(-(d * d) / (2 * sigma * sigma))
+    })
+    const sum = weights.reduce((a, b) => a + b, 0) || 1
+    const idx = pool.findIndex(
+      (e) =>
+        e.kind === estimate.kind &&
+        e.date.getTime() === estimate.date.getTime(),
+    )
+    const share = (idx >= 0 ? weights[idx]! : weights[0]!) / sum
+    // Blend proximity with relative share → distinct per-row figures
+    p = Math.max(0.05, Math.min(0.58, 0.1 + share * 0.48 + p * 0.25))
+  }
+
+  if (sparse) p *= 0.7
+  return Math.max(0.03, Math.min(0.7, p))
+}
+
+/** @deprecated Prefer estimateSlotProbability — kept for any residual callers */
+export function probability24h(product: ProductData, now: Date = new Date()): number {
+  const futures = futureResetEstimates(product, now, 1)
+  if (futures[0]) {
+    return estimateSlotProbability(product, futures[0], now, futures)
+  }
+  return 0.08
 }
 
 /** @deprecated Prefer futureResetEstimates — past windows must not be shown in UI */
