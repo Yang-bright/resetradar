@@ -1,8 +1,16 @@
-import type { ResetKind } from '../data/resets'
+import type { ResetEvent, ResetKind } from '../data/resets'
 import type { Locale } from '../i18n/translations'
 import { translations } from '../i18n/translations'
 
-/** ResetRadar accent: cyan for usage, magenta for banked cards, violet for tokens */
+/** Calendar display categories (distinct colors) */
+export type EventCategory =
+  | 'all_reset'
+  | 'affected_reset'
+  | 'reset_card'
+  | 'special'
+  | 'other'
+
+/** ResetRadar accent: cyan all-user, orange affected, magenta cards, amber special */
 export function kindLabel(kind: ResetKind, locale: Locale): string {
   const t = translations[locale]
   switch (kind) {
@@ -12,6 +20,8 @@ export function kindLabel(kind: ResetKind, locale: Locale): string {
       return t.kindResetCard
     case 'token_reset':
       return t.kindTokenReset
+    case 'special':
+      return t.kindSpecial
     default:
       return t.kindOther
   }
@@ -25,8 +35,10 @@ export function kindChipClass(kind: ResetKind): string {
       return 'bg-fuchsia-500/15 text-fuchsia-300 ring-fuchsia-400/30'
     case 'token_reset':
       return 'bg-violet-500/15 text-violet-300 ring-violet-400/30'
+    case 'special':
+      return 'bg-amber-500/15 text-amber-200 ring-amber-400/35'
     default:
-      return 'bg-amber-500/10 text-amber-200/90 ring-amber-400/25'
+      return 'bg-slate-500/10 text-slate-300 ring-slate-400/25'
   }
 }
 
@@ -38,8 +50,10 @@ export function kindDotClass(kind: ResetKind): string {
       return 'bg-fuchsia-400'
     case 'token_reset':
       return 'bg-violet-400'
-    default:
+    case 'special':
       return 'bg-amber-300'
+    default:
+      return 'bg-slate-400'
   }
 }
 
@@ -51,9 +65,112 @@ export function kindSpineClass(kind: ResetKind): string {
       return 'border-fuchsia-400/70 bg-fuchsia-400 shadow-[0_0_12px_rgba(232,121,249,0.5)]'
     case 'token_reset':
       return 'border-violet-400/70 bg-violet-400 shadow-[0_0_12px_rgba(167,139,250,0.5)]'
+    case 'special':
+      return 'border-amber-300/70 bg-amber-300 shadow-[0_0_12px_rgba(252,211,77,0.45)]'
     default:
-      return 'border-amber-300/60 bg-amber-300 shadow-[0_0_10px_rgba(252,211,77,0.4)]'
+      return 'border-slate-400/50 bg-slate-400 shadow-[0_0_8px_rgba(148,163,184,0.35)]'
   }
+}
+
+/**
+ * Honest mapping for month summary / calendar colors:
+ * - usage_reset (all-users / all paid) → 全员重置
+ * - usage_reset / token_reset that apply to a subset → 受影响用户重置
+ * - reset_card / banked issuance → 发重置卡
+ * - special / pricing → 特殊事件
+ */
+export function isAllAudience(event: ResetEvent): boolean {
+  const blob = `${event.scope} ${event.scopeZh}`.toLowerCase()
+  if (
+    /affected|subset|failed|without|尚未|受影响|仅\s|only\b|max weekly|compensation/i.test(
+      blob,
+    )
+  ) {
+    return false
+  }
+  if (/all|全体|全用户|全员|everyone|全体付费/.test(blob)) return true
+  if (/\bpaid\b/.test(blob) && !/without|尚未/.test(blob)) return true
+  // Default usage-class resets to all-user when scope is ambiguous
+  return true
+}
+
+export function eventCategory(event: ResetEvent): EventCategory {
+  if (event.kind === 'special') return 'special'
+  if (event.kind === 'reset_card') return 'reset_card'
+  if (event.kind === 'usage_reset' || event.kind === 'token_reset') {
+    return isAllAudience(event) ? 'all_reset' : 'affected_reset'
+  }
+  return 'other'
+}
+
+export function categoryLabel(cat: EventCategory, locale: Locale): string {
+  const t = translations[locale]
+  switch (cat) {
+    case 'all_reset':
+      return t.catAllReset
+    case 'affected_reset':
+      return t.catAffectedReset
+    case 'reset_card':
+      return t.catResetCard
+    case 'special':
+      return t.catSpecial
+    default:
+      return t.kindOther
+  }
+}
+
+export function categoryDotClass(cat: EventCategory): string {
+  switch (cat) {
+    case 'all_reset':
+      return 'bg-cyan-400'
+    case 'affected_reset':
+      return 'bg-orange-400'
+    case 'reset_card':
+      return 'bg-fuchsia-400'
+    case 'special':
+      return 'bg-amber-300'
+    default:
+      return 'bg-slate-400'
+  }
+}
+
+export function categoryChipClass(cat: EventCategory): string {
+  switch (cat) {
+    case 'all_reset':
+      return 'bg-cyan-500/15 text-cyan-300 ring-cyan-400/30'
+    case 'affected_reset':
+      return 'bg-orange-500/15 text-orange-300 ring-orange-400/30'
+    case 'reset_card':
+      return 'bg-fuchsia-500/15 text-fuchsia-300 ring-fuchsia-400/30'
+    case 'special':
+      return 'bg-amber-500/15 text-amber-200 ring-amber-400/35'
+    default:
+      return 'bg-slate-500/10 text-slate-300 ring-slate-400/25'
+  }
+}
+
+/** Priority for day cell primary marker */
+const CAT_PRIORITY: EventCategory[] = [
+  'special',
+  'all_reset',
+  'affected_reset',
+  'reset_card',
+  'other',
+]
+
+export function primaryCategory(events: ResetEvent[]): EventCategory | null {
+  if (events.length === 0) return null
+  let best: EventCategory | null = null
+  let bestIdx = CAT_PRIORITY.length
+  for (const e of events) {
+    const cat = eventCategory(e)
+    const idx = CAT_PRIORITY.indexOf(cat)
+    if (idx >= 0 && idx < bestIdx) {
+      best = cat
+      bestIdx = idx
+    }
+  }
+  return best
 }
 
 export function statusTitle(
@@ -69,6 +186,8 @@ export function statusTitle(
       return `${productName} · ${t.statusCardIssued}`
     case 'token_reset':
       return `${productName} · ${t.statusTokenReset}`
+    case 'special':
+      return `${productName} · ${t.statusSpecial}`
     default:
       return `${productName} · ${t.statusOther}`
   }

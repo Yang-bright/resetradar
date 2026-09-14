@@ -11,6 +11,7 @@ export type ResetKind =
   | 'usage_reset'
   | 'reset_card'
   | 'token_reset'
+  | 'special'
   | 'other'
 
 export interface Person {
@@ -54,6 +55,9 @@ export interface ResetEvent {
   inMainHistory: boolean
   /** Optional links to Post.id so day selection can surface Tibo cards */
   postIds?: string[]
+  /** Short calendar annotation under the day (special / pricing) */
+  markerLabel?: string
+  markerLabelZh?: string
 }
 
 export interface ProductData {
@@ -390,6 +394,18 @@ export const products: ProductData[] = [
         countsForEstimate: false,
         inMainHistory: true,
         postIds: ['codex-2026-09-09-banked'],
+      },
+      {
+        date: '2026-09-10T16:00:00.000Z',
+        kind: 'special',
+        scope: 'ChatGPT Pro ($200 / Pro 20X)',
+        scopeZh: 'ChatGPT Pro（$200 / Pro 20X）',
+        note: 'New Pro $200 (Pro 20X) sign-ups/upgrades paused due to Astra demand; existing subscriptions unaffected. Public: Tibo / The Verge / OpenAI help ~Sep 10–11 2026.',
+        noteZh: '$200 Pro（Pro 20X）新购/升级暂停（Astra 需求）；现有订阅不受影响。公开来源：Tibo / The Verge / OpenAI 帮助中心 ~2026-09-10–11。',
+        countsForEstimate: false,
+        inMainHistory: true,
+        markerLabel: '$200 Pro pause',
+        markerLabelZh: '$200 Pro 新购暂停',
       },
       {
         date: '2026-09-08T04:05:00.000Z',

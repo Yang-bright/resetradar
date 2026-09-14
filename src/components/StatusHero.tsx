@@ -1,4 +1,3 @@
-import { Radar } from 'lucide-react'
 import type { ProductData } from '../data/resets'
 import type { Locale } from '../i18n/translations'
 import { translations } from '../i18n/translations'
@@ -8,10 +7,10 @@ import {
   formatDateTime,
   formatElapsed,
   formatWeekday,
-  zoneHint,
 } from '../utils/time'
 import { feedTitle } from '../utils/feedTitle'
 import { PostCard } from './PostCard'
+import { PredictionPanel } from './PredictionPanel'
 
 interface Props {
   product: ProductData
@@ -35,40 +34,37 @@ export function StatusHero({ product, locale, now }: Props) {
       <div className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full border border-cyan-400/20" />
       <div className="pointer-events-none absolute -right-2 -top-2 h-24 w-24 rounded-full border border-fuchsia-400/15" />
 
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-md border border-cyan-400/30 bg-cyan-500/10 px-2 py-0.5 rr-mono text-[10px] font-semibold tracking-[0.2em] text-cyan-300">
-            <Radar className="h-3 w-3" aria-hidden />
-            {t.scanLabel}
-          </span>
-          {last ? (
-            <span className="text-sm font-medium text-cyan-300/90">{t.resetDone}</span>
-          ) : (
-            <span className="text-sm font-medium text-slate-500">{t.resetPending}</span>
-          )}
-          <span className="text-slate-600">·</span>
-          <span className="text-sm font-semibold text-slate-100">{name}</span>
-        </div>
-        <span className="rr-mono text-xs text-slate-500">{zoneHint(locale)}</span>
-      </div>
+      {/* Title: product + 最近重置 — no SCAN clutter */}
+      <h2 className="text-lg font-semibold tracking-tight text-slate-100 sm:text-xl">
+        <span className="text-cyan-300">{name}</span>
+        <span className="mx-2 text-slate-600">·</span>
+        <span>{t.lastReset}</span>
+      </h2>
 
-      {last ? (
-        <>
-          <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
-            {t.lastReset}
-          </p>
-          <h2 className="mt-1 text-3xl font-bold tracking-tight text-white sm:text-4xl md:text-5xl">
-            {formatDateTime(last, locale)}
-          </h2>
-          <p className="mt-2 text-sm text-slate-400">
-            {formatWeekday(last, locale)}
-            <span className="mx-2 text-slate-600">·</span>
-            {formatElapsed(last, now, locale)}
-          </p>
-        </>
-      ) : (
-        <h2 className="text-3xl font-bold text-slate-600">{t.unknown}</h2>
-      )}
+      {/* Same row: left = last reset; right = next window + probability */}
+      <div className="mt-4 grid gap-4 lg:grid-cols-2 lg:items-stretch">
+        <div className="min-w-0">
+          {last ? (
+            <>
+              <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
+                {t.lastReset}
+              </p>
+              <p className="mt-1 text-3xl font-bold tracking-tight text-white sm:text-4xl md:text-[2.75rem]">
+                {formatDateTime(last, locale)}
+              </p>
+              <p className="mt-2 text-sm text-slate-400">
+                {formatWeekday(last, locale)}
+                <span className="mx-2 text-slate-600">·</span>
+                {formatElapsed(last, now, locale)}
+              </p>
+            </>
+          ) : (
+            <p className="text-3xl font-bold text-slate-600">{t.unknown}</p>
+          )}
+        </div>
+
+        <PredictionPanel product={product} locale={locale} now={now} embedded />
+      </div>
 
       {latestPost && (
         <div className="mt-6">

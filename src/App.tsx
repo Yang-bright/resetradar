@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import { LocaleToggle } from './components/LocaleToggle'
-import { PredictionPanel } from './components/PredictionPanel'
 import { ProductTabs } from './components/ProductTabs'
 import { ResetCalendar } from './components/ResetCalendar'
 import { StatusHero } from './components/StatusHero'
@@ -68,14 +67,9 @@ export default function App() {
           </p>
         )}
 
-        {/* Primary: last reset + product-specific related post */}
-        <div className="mb-4">
-          <StatusHero product={activeProduct} locale={locale} now={now} />
-        </div>
-
-        {/* Compact next-reset + 24h probability (illustrative) */}
+        {/* Hero: last reset | next prediction (same row) + related posts */}
         <div className="mb-8">
-          <PredictionPanel product={activeProduct} locale={locale} now={now} />
+          <StatusHero product={activeProduct} locale={locale} now={now} />
         </div>
 
         {/* Calendar → click for day detail + related posts */}

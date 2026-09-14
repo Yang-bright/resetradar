@@ -5,15 +5,19 @@ import {
   type Post,
   type ProductData,
   type ResetEvent,
-  type ResetKind,
 } from '../data/resets'
 import type { Locale } from '../i18n/translations'
 import { translations } from '../i18n/translations'
 import {
+  categoryChipClass,
+  categoryDotClass,
+  categoryLabel,
+  eventCategory,
   kindChipClass,
-  kindDotClass,
   kindLabel,
+  primaryCategory,
   statusTitle,
+  type EventCategory,
 } from '../utils/kinds'
 import { lastResetDate } from '../utils/estimates'
 import {
@@ -30,14 +34,6 @@ import { PostCard } from './PostCard'
 interface Props {
   product: ProductData
   locale: Locale
-}
-
-function primaryKind(events: ResetEvent[]): ResetKind | null {
-  if (events.some((e) => e.kind === 'usage_reset')) return 'usage_reset'
-  if (events.some((e) => e.kind === 'token_reset')) return 'token_reset'
-  if (events.some((e) => e.kind === 'reset_card')) return 'reset_card'
-  if (events.length > 0) return events[0]!.kind
-  return null
 }
 
 function postsForSelection(
@@ -69,6 +65,25 @@ function historyEvents(product: ProductData): ResetEvent[] {
   const cut = +new Date(HISTORY_CUTOFF)
   return product.events.filter((e) => +new Date(e.date) >= cut)
 }
+
+function dayMarkerLabel(
+  events: ResetEvent[],
+  locale: Locale,
+): string | null {
+  for (const e of events) {
+    if (e.kind !== 'special') continue
+    const label = locale === 'zh' ? e.markerLabelZh ?? e.markerLabel : e.markerLabel ?? e.markerLabelZh
+    if (label) return label
+  }
+  return null
+}
+
+const LEGEND_CATS: EventCategory[] = [
+  'all_reset',
+  'affected_reset',
+  'reset_card',
+  'special',
+]
 
 export function ResetCalendar({ product, locale }: Props) {
   const t = translations[locale]
@@ -116,17 +131,20 @@ export function ResetCalendar({ product, locale }: Props) {
   }, [allHistory, locale, viewYear, viewMonth])
 
   const monthCounts = useMemo(() => {
-    let usage = 0
+    let all = 0
+    let affected = 0
     let card = 0
-    let token = 0
+    let special = 0
     for (const list of monthEvents.values()) {
       for (const e of list) {
-        if (e.kind === 'usage_reset') usage++
-        else if (e.kind === 'reset_card') card++
-        else if (e.kind === 'token_reset') token++
+        const cat = eventCategory(e)
+        if (cat === 'all_reset') all++
+        else if (cat === 'affected_reset') affected++
+        else if (cat === 'reset_card') card++
+        else if (cat === 'special') special++
       }
     }
-    return { usage, card, token }
+    return { all, affected, card, special }
   }, [monthEvents])
 
   const selectedEvents = useMemo(() => {
@@ -139,9 +157,10 @@ export function ResetCalendar({ product, locale }: Props) {
   const selectedPosts = selected
     ? postsForSelection(product, selected, selectedEvents, locale)
     : []
-  const selectedPrimary = primaryKind(selectedEvents)
+  const selectedPrimary = primaryCategory(selectedEvents)
   const selectedDate = selected ? parseDayKey(selected) : null
   const hasDetail = selected !== null && selectedEvents.length > 0
+  const selectedPrimaryKind = selectedEvents[0]?.kind
 
   const goPrev = () => {
     if (viewMonth === 0) {
@@ -170,185 +189,229 @@ export function ResetCalendar({ product, locale }: Props) {
   for (let d = 1; d <= daysInMonth; d++) cells.push(d)
   while (cells.length % 7 !== 0) cells.push(null)
 
+  const monthSummary =
+    locale === 'zh'
+      ? `${t.monthSummaryLead}：${monthCounts.all} ${t.countAllReset} · ${monthCounts.affected} ${t.countAffectedReset} · ${monthCounts.card} ${t.countResetCard}`
+      : `${t.monthSummaryLead}: ${monthCounts.all} ${t.countAllReset} · ${monthCounts.affected} ${t.countAffectedReset} · ${monthCounts.card} ${t.countResetCard}`
+
   return (
-    <section className="space-y-5">
-      {/* Primary: month calendar */}
-      <div className="rounded-3xl border border-white/10 bg-[#0c1119] p-5 sm:p-7">
-        <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <h3 className="text-xl font-bold tracking-tight text-white">
-              {t.calendarTitle}
-            </h3>
-            <p className="mt-1 text-sm text-slate-500">{t.calendarHint}</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
+    <section className="rounded-3xl border border-white/10 bg-[#0c1119] p-5 sm:p-7">
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h3 className="text-xl font-bold tracking-tight text-white">
+            {t.calendarTitle}
+          </h3>
+          <p className="mt-1 text-sm text-slate-500">{t.calendarHint}</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={goLatest}
+            className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:border-cyan-400/40 hover:text-cyan-200"
+          >
+            {t.backToLatest}
+          </button>
+          <div className="flex items-center gap-1.5">
             <button
               type="button"
-              onClick={goLatest}
-              className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:border-cyan-400/40 hover:text-cyan-200"
+              onClick={goPrev}
+              className="rounded-lg border border-white/10 p-1.5 text-slate-400 transition hover:border-cyan-400/40 hover:text-cyan-200"
+              aria-label="Previous month"
             >
-              {t.backToLatest}
+              <ChevronLeft className="h-4 w-4" />
             </button>
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={goPrev}
-                className="rounded-lg border border-white/10 p-1.5 text-slate-400 transition hover:border-cyan-400/40 hover:text-cyan-200"
-                aria-label="Previous month"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <span className="min-w-[8rem] text-center text-sm font-semibold text-slate-200">
-                {formatMonthTitle(viewYear, viewMonth, locale)}
-              </span>
-              <button
-                type="button"
-                onClick={goNext}
-                className="rounded-lg border border-white/10 p-1.5 text-slate-400 transition hover:border-cyan-400/40 hover:text-cyan-200"
-                aria-label="Next month"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="mb-4 text-xs text-slate-500">
-          {t.monthSummary}：
-          <span className="ml-1 text-cyan-400/90">
-            {monthCounts.usage} {t.globalResetsMonth}
-          </span>
-          <span className="ml-2 text-fuchsia-400/90">
-            · {monthCounts.card} {t.bankedMonth}
-          </span>
-          {monthCounts.token > 0 && (
-            <span className="ml-2 text-violet-400/90">
-              · {monthCounts.token} {t.kindTokenReset}
+            <span className="min-w-[8rem] text-center text-sm font-semibold text-slate-200">
+              {formatMonthTitle(viewYear, viewMonth, locale)}
             </span>
-          )}
-        </div>
-
-        {allHistory.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-white/10 px-4 py-10 text-center text-sm text-slate-500">
-            {t.historyEmpty}
-          </p>
-        ) : (
-          <div className="rounded-2xl border border-cyan-500/15 bg-black/35 p-3 sm:p-4">
-            <div className="mb-2 grid grid-cols-7 gap-1.5">
-              {t.weekdays.map((w) => (
-                <div
-                  key={w}
-                  className="py-1 text-center text-[11px] font-medium text-slate-500"
-                >
-                  {w}
-                </div>
-              ))}
-            </div>
-            <div className="grid grid-cols-7 gap-1.5">
-              {cells.map((day, idx) => {
-                if (day === null) {
-                  return <div key={`e-${idx}`} className="min-h-[3.25rem]" />
-                }
-                const key = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-                const dayEvents = monthEvents.get(key) ?? []
-                const kind = primaryKind(dayEvents)
-                const isSelected = selected === key
-                const hasEvents = dayEvents.length > 0
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => selectDay(key)}
-                    className={`flex min-h-[3.25rem] flex-col items-center justify-center rounded-xl border text-sm transition ${
-                      isSelected
-                        ? 'border-cyan-400/70 bg-cyan-500/20 text-cyan-50 shadow-[0_0_20px_rgba(34,211,238,0.18)]'
-                        : hasEvents
-                          ? 'border-fuchsia-400/20 bg-fuchsia-500/[0.07] text-slate-100 hover:border-cyan-400/40'
-                          : 'border-transparent text-slate-600 hover:bg-white/[0.04]'
-                    }`}
-                  >
-                    <span className="rr-mono font-semibold tabular-nums">{day}</span>
-                    {kind && (
-                      <span
-                        className={`mt-1 h-1.5 w-1.5 rounded-full ${kindDotClass(kind)}`}
-                      />
-                    )}
-                  </button>
-                )
-              })}
-            </div>
+            <button
+              type="button"
+              onClick={goNext}
+              className="rounded-lg border border-white/10 p-1.5 text-slate-400 transition hover:border-cyan-400/40 hover:text-cyan-200"
+              aria-label="Next month"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
           </div>
-        )}
-        <p className="mt-3 text-[11px] text-slate-600">{t.beijingNote}</p>
+        </div>
       </div>
 
-      {/* Detail only after a date click / selection with events */}
-      {selected && selectedDate && (
-        <div className="rounded-3xl border border-white/10 bg-[#0c1119] p-5 sm:p-7">
-          <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
-            <div>
-              <h3 className="text-lg font-bold text-white">{t.dayDetail}</h3>
-              <p className="mt-0.5 text-sm text-slate-500">
-                {formatDate(selectedDate, locale)} · {zoneHint(locale)}
-              </p>
+      <div className="mb-4 text-xs leading-relaxed text-slate-400 sm:text-sm">
+        {monthSummary}
+      </div>
+
+      {allHistory.length === 0 ? (
+        <p className="rounded-2xl border border-dashed border-white/10 px-4 py-10 text-center text-sm text-slate-500">
+          {t.historyEmpty}
+        </p>
+      ) : (
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(16rem,1fr)] lg:items-start">
+          {/* Left: calendar */}
+          <div className="min-w-0">
+            <div className="rounded-2xl border border-cyan-500/15 bg-black/35 p-3 sm:p-4">
+              <div className="mb-2 grid grid-cols-7 gap-1.5">
+                {t.weekdays.map((w) => (
+                  <div
+                    key={w}
+                    className="py-1 text-center text-[11px] font-medium text-slate-500"
+                  >
+                    {w}
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-7 gap-1.5">
+                {cells.map((day, idx) => {
+                  if (day === null) {
+                    return <div key={`e-${idx}`} className="min-h-[3.75rem]" />
+                  }
+                  const key = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+                  const dayEvents = monthEvents.get(key) ?? []
+                  const cat = primaryCategory(dayEvents)
+                  const marker = dayMarkerLabel(dayEvents, locale)
+                  const isSelected = selected === key
+                  const hasEvents = dayEvents.length > 0
+                  return (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => selectDay(key)}
+                      className={`flex min-h-[3.75rem] flex-col items-center justify-center rounded-xl border px-0.5 py-1 text-sm transition ${
+                        isSelected
+                          ? 'border-cyan-400/70 bg-cyan-500/20 text-cyan-50 shadow-[0_0_20px_rgba(34,211,238,0.18)]'
+                          : hasEvents
+                            ? 'border-white/10 bg-white/[0.03] text-slate-100 hover:border-cyan-400/40'
+                            : 'border-transparent text-slate-600 hover:bg-white/[0.04]'
+                      }`}
+                    >
+                      <span className="rr-mono font-semibold tabular-nums">
+                        {day}
+                      </span>
+                      {marker && (
+                        <span className="mt-0.5 max-w-full px-0.5 text-center text-[8px] leading-tight text-amber-200/90 line-clamp-2">
+                          {marker}
+                        </span>
+                      )}
+                      {cat && (
+                        <span
+                          className={`mt-1 h-1.5 w-1.5 rounded-full ${categoryDotClass(cat)}`}
+                        />
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
             </div>
-            {selectedPrimary && (
-              <span
-                className={`inline-flex rounded-md px-2 py-1 text-xs font-semibold ring-1 ring-inset ${kindChipClass(selectedPrimary)}`}
-              >
-                {kindLabel(selectedPrimary, locale)}
-              </span>
-            )}
+
+            {/* Color legend */}
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] text-slate-400">
+              <span className="font-medium text-slate-500">{t.legendTitle}</span>
+              {LEGEND_CATS.map((cat) => (
+                <span key={cat} className="inline-flex items-center gap-1.5">
+                  <span
+                    className={`h-2 w-2 rounded-full ${categoryDotClass(cat)}`}
+                  />
+                  {categoryLabel(cat, locale)}
+                </span>
+              ))}
+            </div>
+            <p className="mt-2 text-[11px] leading-relaxed text-slate-600">
+              {monthCounts.special > 0
+                ? t.specialEventsPresent
+                : t.specialEventsNote}
+            </p>
+            <p className="mt-1 text-[11px] text-slate-600">{t.beijingNote}</p>
           </div>
 
-          {!hasDetail ? (
-            <p className="rounded-xl border border-dashed border-white/10 bg-black/20 px-4 py-8 text-center text-sm text-slate-500">
-              {t.noEventsDay}
-            </p>
-          ) : (
-            <>
-              <div className="mb-4">
-                <div className="text-base font-semibold text-slate-100">
-                  {statusTitle(selectedPrimary!, name, locale)}
-                </div>
-                <ul className="mt-3 space-y-2">
-                  {selectedEvents.map((e) => (
-                    <li
-                      key={`${e.date}-${e.kind}-${e.note}`}
-                      className="rounded-xl border border-white/5 bg-black/25 px-3 py-2 text-sm text-slate-300"
+          {/* Right: day detail / 当日信号 */}
+          <div className="min-w-0 rounded-2xl border border-white/8 bg-black/25 p-4 sm:p-5">
+            {selected && selectedDate ? (
+              <>
+                <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+                  <div>
+                    <h4 className="text-base font-bold text-white">
+                      {t.dayDetail}
+                    </h4>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      {formatDate(selectedDate, locale)} · {zoneHint(locale)}
+                    </p>
+                  </div>
+                  {selectedPrimary && (
+                    <span
+                      className={`inline-flex rounded-md px-2 py-1 text-[11px] font-semibold ring-1 ring-inset ${categoryChipClass(selectedPrimary)}`}
                     >
-                      <span
-                        className={`mr-2 inline-flex rounded-md px-1.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${kindChipClass(e.kind)}`}
-                      >
-                        {kindLabel(e.kind, locale)}
-                      </span>
-                      {locale === 'zh' ? e.noteZh : e.note}
-                      <span className="text-slate-500">
-                        {' '}
-                        · {locale === 'zh' ? e.scopeZh : e.scope}
-                      </span>
-                      <div className="mt-1 rr-mono text-[11px] text-slate-600">
-                        {formatDateTime(e.date, locale)}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+                      {categoryLabel(selectedPrimary, locale)}
+                    </span>
+                  )}
+                </div>
 
-              <div className="mb-2 text-xs font-medium uppercase tracking-wider text-slate-500">
-                {selectedPosts.length > 0 ? feedTitle(product, locale) : t.linkedPosts}
-              </div>
-              <div className="space-y-3">
-                {selectedPosts.length > 0 ? (
-                  selectedPosts.map((p) => (
-                    <PostCard key={p.id} post={p} locale={locale} />
-                  ))
+                {!hasDetail ? (
+                  <p className="rounded-xl border border-dashed border-white/10 bg-black/20 px-3 py-8 text-center text-sm text-slate-500">
+                    {t.noEventsDay}
+                  </p>
                 ) : (
-                  <p className="text-xs text-slate-500">{t.noUrl}</p>
+                  <>
+                    {selectedPrimaryKind && (
+                      <div className="mb-3 text-sm font-semibold text-slate-100">
+                        {statusTitle(selectedPrimaryKind, name, locale)}
+                      </div>
+                    )}
+                    <ul className="space-y-2">
+                      {selectedEvents.map((e) => {
+                        const cat = eventCategory(e)
+                        return (
+                          <li
+                            key={`${e.date}-${e.kind}-${e.note}`}
+                            className="rounded-xl border border-white/5 bg-black/30 px-3 py-2 text-sm text-slate-300"
+                          >
+                            <span
+                              className={`mr-2 inline-flex rounded-md px-1.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${
+                                cat === 'all_reset' ||
+                                cat === 'affected_reset' ||
+                                cat === 'reset_card' ||
+                                cat === 'special'
+                                  ? categoryChipClass(cat)
+                                  : kindChipClass(e.kind)
+                              }`}
+                            >
+                              {cat === 'other'
+                                ? kindLabel(e.kind, locale)
+                                : categoryLabel(cat, locale)}
+                            </span>
+                            {locale === 'zh' ? e.noteZh : e.note}
+                            <span className="text-slate-500">
+                              {' '}
+                              · {locale === 'zh' ? e.scopeZh : e.scope}
+                            </span>
+                            <div className="mt-1 rr-mono text-[11px] text-slate-600">
+                              {formatDateTime(e.date, locale)}
+                            </div>
+                          </li>
+                        )
+                      })}
+                    </ul>
+
+                    <div className="mb-2 mt-4 text-xs font-medium uppercase tracking-wider text-slate-500">
+                      {selectedPosts.length > 0
+                        ? feedTitle(product, locale)
+                        : t.linkedPosts}
+                    </div>
+                    <div className="space-y-3">
+                      {selectedPosts.length > 0 ? (
+                        selectedPosts.map((p) => (
+                          <PostCard key={p.id} post={p} locale={locale} />
+                        ))
+                      ) : (
+                        <p className="text-xs text-slate-500">{t.noUrl}</p>
+                      )}
+                    </div>
+                  </>
                 )}
-              </div>
-            </>
-          )}
+              </>
+            ) : (
+              <p className="py-10 text-center text-sm text-slate-500">
+                {t.selectDay}
+              </p>
+            )}
+          </div>
         </div>
       )}
     </section>
