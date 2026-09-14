@@ -730,7 +730,7 @@ export const products: ProductData[] = [
         summary:
           "We're giving all @Grok @Bot users another free reset on token usage",
         summaryZh:
-          "We're giving all @Grok @Bot users another free reset on token usage",
+          '我们给所有 @Grok @Bot 用户再发放一次免费 token 用量重置',
         author: 'Elon Musk',
         authorZh: '埃隆·马斯克',
         handle: '@elonmusk',

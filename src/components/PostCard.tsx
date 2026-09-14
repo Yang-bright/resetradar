@@ -23,11 +23,25 @@ function avatarSrc(post: Post): string | undefined {
   return undefined
 }
 
+/** Prefer summaryZh in zh locale; fall back to English if Zh missing/blank. */
+function primarySummary(post: Post, locale: Locale): string {
+  if (locale === 'zh') {
+    const zh = post.summaryZh?.trim()
+    if (zh) return zh
+  }
+  return post.summary
+}
+
 export function PostCard({ post, locale }: Props) {
   const t = translations[locale]
   const name = locale === 'zh' && post.authorZh ? post.authorZh : post.author
   const initials = post.avatarInitials ?? name.slice(0, 2).toUpperCase()
   const src = avatarSrc(post)
+  const primary = primarySummary(post, locale)
+  const showEnSecondary =
+    locale === 'zh' &&
+    Boolean(post.summaryZh?.trim()) &&
+    post.summary.trim() !== post.summaryZh.trim()
 
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -67,8 +81,13 @@ export function PostCard({ post, locale }: Props) {
       </div>
 
       <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-slate-700">
-        {locale === 'zh' ? post.summaryZh : post.summary}
+        {primary}
       </p>
+      {showEnSecondary && (
+        <p className="mt-2 whitespace-pre-wrap text-[13px] leading-relaxed text-slate-500">
+          {post.summary}
+        </p>
+      )}
 
       <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-slate-100 pt-3 text-xs">
         {post.url ? (

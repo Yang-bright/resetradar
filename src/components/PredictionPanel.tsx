@@ -5,9 +5,8 @@ import {
   estimateSlotProbability,
   futureResetEstimates,
   lastResetDate,
-  type EstimateKind,
 } from '../utils/estimates'
-import { formatCountdown, formatDateTime } from '../utils/time'
+import { formatCountdown, formatEstimateDate } from '../utils/time'
 import { PostCard } from './PostCard'
 
 interface Props {
@@ -18,18 +17,6 @@ interface Props {
   embedded?: boolean
   /** Optional heads-up / upcoming related posts */
   upcomingPosts?: Post[]
-}
-
-function estimateKindLabel(kind: EstimateKind, locale: Locale): string {
-  const t = translations[locale]
-  switch (kind) {
-    case 'documented':
-      return t.estimateDocumented
-    case 'rolled':
-      return t.estimateRolled
-    default:
-      return t.estimateMedian
-  }
 }
 
 /**
@@ -68,20 +55,14 @@ export function PredictionPanel({
         </p>
       ) : (
         <ul className="mt-2 space-y-3">
-          {futures.map((est, i) => {
+          {futures.map((est) => {
             const countdown = formatCountdown(est.date, now, locale)
             const p = estimateSlotProbability(product, est, now, futures)
             const pct = Math.round(p * 100)
             return (
               <li key={`${est.kind}-${est.date.toISOString()}`}>
-                {futures.length > 1 && (
-                  <div className="mb-0.5 text-[10px] font-medium uppercase tracking-wider text-slate-400">
-                    {estimateKindLabel(est.kind, locale)}
-                    {i === 0 ? ' · 1' : ' · 2'}
-                  </div>
-                )}
                 <div className="text-base font-semibold text-slate-800 sm:text-lg">
-                  {formatDateTime(est.date, locale)}
+                  {formatEstimateDate(est.date, locale)}
                 </div>
                 {countdown && !countdown.overdue && (
                   <p className="mt-1 text-xs text-slate-500">{countdown.text}</p>

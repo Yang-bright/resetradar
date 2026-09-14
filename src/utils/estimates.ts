@@ -153,9 +153,11 @@ export function futureResetEstimates(
     }
   }
 
-  // Final guard: UI must never receive a past next-window
+  // Final guard: UI must never receive a past next-window.
+  // Sort chronologically ascending (soonest first).
   return out
     .filter((f) => f.date.getTime() > now.getTime())
+    .sort((a, b) => a.date.getTime() - b.date.getTime())
     .slice(0, limit)
 }
 

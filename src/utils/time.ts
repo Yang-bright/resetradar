@@ -46,6 +46,32 @@ export function formatDate(iso: string | Date, locale: Locale): string {
   return formatInTimeZone(date, tz, pattern)
 }
 
+/** Rough day-part for estimate display (no clock precision). */
+function dayPartLabel(iso: string | Date, locale: Locale): string {
+  const date = typeof iso === 'string' ? new Date(iso) : iso
+  const tz = zoneForLocale(locale)
+  const hour = Number(formatInTimeZone(date, tz, 'H'))
+  if (locale === 'zh') {
+    if (hour < 12) return '上午'
+    if (hour < 18) return '下午'
+    return '晚上'
+  }
+  if (hour < 12) return 'morning'
+  if (hour < 18) return 'afternoon'
+  return 'evening'
+}
+
+/**
+ * Next-estimate display: date only, or date + rough period — never HH:mm.
+ * e.g. 9月15日 上午 / Sep 15 morning
+ */
+export function formatEstimateDate(iso: string | Date, locale: Locale): string {
+  const date = typeof iso === 'string' ? new Date(iso) : iso
+  const base = formatDate(date, locale)
+  const part = dayPartLabel(date, locale)
+  return `${base} ${part}`
+}
+
 export function formatMonthTitle(year: number, monthIndex: number, locale: Locale): string {
   if (locale === 'zh') return `${year} 年 ${monthIndex + 1} 月`
   const d = new Date(Date.UTC(year, monthIndex, 1))
