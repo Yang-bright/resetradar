@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 html {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 body {
@@ -14,10 +14,12 @@ body {
     'Segoe UI',
     Roboto,
     'PingFang SC',
+    'Hiragino Sans GB',
     'Noto Sans SC',
     'Microsoft YaHei',
     sans-serif;
-  background: #09090b;
+  background: #f4f5f8;
+  color: #1c1f26;
   -webkit-font-smoothing: antialiased;
 }
 

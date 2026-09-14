@@ -1,4 +1,8 @@
 import type { ProductData, ResetEvent } from '../data/resets'
+import { calendarDayKey, zoneForLocale } from './time'
+import type { Locale } from '../i18n/translations'
+import { addDays, startOfDay } from 'date-fns'
+import { toZonedTime, fromZonedTime } from 'date-fns-tz'
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000
 
@@ -82,17 +86,14 @@ export function probability24h(product: ProductData, now: Date = new Date()): nu
   if (progress < 0.35) {
     p = 0.05 + progress * 0.15
   } else if (progress < 1) {
-    // approach estimate: 0.1 → ~0.55
     const t = (progress - 0.35) / 0.65
     p = 0.1 + t * 0.45
   } else {
-    // overdue: 0.55 → 0.85
     const overdueDays = elapsedDays - medianDays
     const t = Math.min(1, overdueDays / Math.max(1, medianDays * 0.5))
     p = 0.55 + t * 0.3
   }
 
-  // Sparse data dampener (Grok etc.)
   const events = estimateEvents(product)
   if (events.length < 2) {
     p *= 0.65
@@ -105,4 +106,82 @@ export function isOverdue(product: ProductData, now: Date = new Date()): boolean
   const next = estimatedNextReset(product)
   if (!next) return false
   return now.getTime() > next.getTime()
+}
+
+export interface DayPrediction {
+  /** Calendar day key in display TZ */
+  dayKey: string
+  date: Date
+  probability: number
+}
+
+/**
+ * Spread a soft probability mass across upcoming calendar days, peaking near
+ * the estimated next reset. Distinct from the single 24h heuristic — used for
+ * the prediction strip in the status area.
+ */
+export function dailyPredictions(
+  product: ProductData,
+  now: Date,
+  locale: Locale,
+  count = 5,
+): DayPrediction[] {
+  const next = estimatedNextReset(product)
+  const { days: medianDays } = medianGapDays(product)
+  const events = estimateEvents(product)
+  const sparse = events.length < 2
+  const tz = zoneForLocale(locale)
+
+  const zonedNow = toZonedTime(now, tz)
+  const startLocal = startOfDay(zonedNow)
+
+  const weights: number[] = []
+  const dates: Date[] = []
+
+  for (let i = 0; i < count; i++) {
+    const localDay = addDays(startLocal, i)
+    const utcNoon = fromZonedTime(
+      new Date(
+        localDay.getFullYear(),
+        localDay.getMonth(),
+        localDay.getDate(),
+        12,
+        0,
+        0,
+      ),
+      tz,
+    )
+    dates.push(utcNoon)
+
+    let w = 0.08
+    if (next && medianDays > 0) {
+      const distDays =
+        (utcNoon.getTime() - next.getTime()) / MS_PER_DAY
+      // Gaussian-ish peak around estimated next
+      const sigma = Math.max(0.8, medianDays * 0.35)
+      w = Math.exp(-(distDays * distDays) / (2 * sigma * sigma))
+      // slight boost if overdue and day is today/tomorrow
+      if (now.getTime() > next.getTime() && i <= 1) {
+        w *= 1.35
+      }
+    }
+    if (sparse) w *= 0.7
+    weights.push(Math.max(0.02, w))
+  }
+
+  const sum = weights.reduce((a, b) => a + b, 0) || 1
+  // Scale so peak day lands in a readable 15–55% band (illustrative)
+  const peak = Math.max(...weights)
+  const targetPeak = sparse ? 0.22 : 0.38
+  const scale = peak > 0 ? targetPeak / peak : 1
+
+  return dates.map((date, i) => {
+    const raw = (weights[i]! / sum) * (sum * scale)
+    const probability = Math.max(0.02, Math.min(0.55, raw))
+    return {
+      dayKey: calendarDayKey(date, locale),
+      date,
+      probability,
+    }
+  })
 }

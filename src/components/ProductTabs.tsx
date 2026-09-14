@@ -8,16 +8,10 @@ interface Props {
   onChange: (id: ProductId) => void
 }
 
-const accentActive: Record<ProductId, string> = {
-  codex: 'border-emerald-400 text-emerald-300 bg-emerald-500/10',
-  claude: 'border-amber-400 text-amber-300 bg-amber-500/10',
-  grok: 'border-zinc-300 text-zinc-100 bg-zinc-500/10',
-}
-
 export function ProductTabs({ active, locale, onChange }: Props) {
   return (
     <div
-      className="flex flex-wrap gap-2 border-b border-white/10 pb-3"
+      className="inline-flex flex-wrap gap-1 rounded-2xl border border-slate-200/80 bg-slate-100/80 p-1.5 shadow-inner"
       role="tablist"
     >
       {products.map((p) => {
@@ -30,10 +24,10 @@ export function ProductTabs({ active, locale, onChange }: Props) {
             role="tab"
             aria-selected={isActive}
             onClick={() => onChange(p.id)}
-            className={`rounded-xl border px-4 py-2 text-sm font-medium transition ${
+            className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
               isActive
-                ? accentActive[p.id]
-                : 'border-transparent text-zinc-400 hover:bg-white/5 hover:text-zinc-200'
+                ? 'bg-white text-indigo-700 shadow-sm shadow-slate-900/10 ring-1 ring-slate-200/80'
+                : 'text-slate-500 hover:text-slate-800'
             }`}
           >
             {name}
