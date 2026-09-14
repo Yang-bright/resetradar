@@ -21,8 +21,6 @@ export default function App() {
 
   const caveat =
     locale === 'zh' ? activeProduct.caveatZh : activeProduct.caveat
-  const desc =
-    locale === 'zh' ? activeProduct.descriptionZh : activeProduct.description
 
   return (
     <div className="rr-radar-grid relative min-h-dvh overflow-hidden bg-[#07090d] text-slate-100">
@@ -31,7 +29,7 @@ export default function App() {
       </div>
 
       <div className="relative mx-auto max-w-6xl px-4 pb-16 pt-8 sm:px-6">
-        <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
+        <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="mb-2 flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-md border border-cyan-400/35 bg-cyan-500/10 px-2.5 py-0.5 rr-mono text-[10px] font-semibold tracking-[0.22em] text-cyan-300">
@@ -63,47 +61,33 @@ export default function App() {
           <ProductTabs active={active} locale={locale} onChange={setActive} />
         </div>
 
-        <p className="mb-6 max-w-3xl text-sm leading-relaxed text-slate-400">
-          {desc}
-        </p>
-
         {caveat && (
-          <div className="mb-6 rounded-2xl border border-amber-400/25 bg-amber-500/10 px-4 py-3 text-sm text-amber-100/90">
-            <span className="font-semibold">{t.caveat}: </span>
+          <p className="mb-5 text-xs leading-relaxed text-amber-200/70">
+            <span className="font-semibold text-amber-200/90">{t.caveat}: </span>
             {caveat}
-          </div>
+          </p>
         )}
 
-        <div className="mb-8 grid gap-5 lg:grid-cols-[1.45fr_1fr]">
+        {/* Primary: LAST RESET + Tibo post */}
+        <div className="mb-4">
           <StatusHero product={activeProduct} locale={locale} now={now} />
+        </div>
+
+        {/* Optional one-line next-window hint — no daily bars */}
+        <div className="mb-8">
           <PredictionPanel product={activeProduct} locale={locale} now={now} />
         </div>
 
-        <div className="mb-8">
+        {/* Secondary: calendar → click for day detail + Tibo */}
+        <div className="mb-10">
           <ResetCalendar product={activeProduct} locale={locale} />
         </div>
 
-        <section className="mb-8 space-y-5 rounded-3xl border border-white/10 bg-[#0c1119] p-5 sm:p-7">
-          <div>
-            <h2 className="text-base font-semibold text-white">
-              {t.methodologyTitle}
-            </h2>
-            <pre className="mt-3 whitespace-pre-wrap font-sans text-sm leading-relaxed text-slate-400">
-              {t.methodology}
-            </pre>
-          </div>
-          <div className="border-t border-white/5 pt-5">
-            <h2 className="text-base font-semibold text-white">
-              {t.disclaimerTitle}
-            </h2>
-            <p className="mt-2 text-sm leading-relaxed text-slate-400">
-              {t.disclaimer}
-            </p>
-          </div>
-        </section>
-
         <footer className="border-t border-white/5 pt-6 text-center text-xs text-slate-600">
-          <p>{t.footerCopy}</p>
+          <p className="mx-auto max-w-2xl leading-relaxed text-slate-500">
+            {t.disclaimerShort}
+          </p>
+          <p className="mt-3">{t.footerCopy}</p>
           <p className="mt-1 rr-mono text-slate-500">{t.footerSite}</p>
         </footer>
       </div>

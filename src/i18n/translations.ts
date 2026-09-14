@@ -5,7 +5,7 @@ export const translations = {
     brand: '重置雷达',
     brandEn: 'ResetRadar',
     tagline: '扫描 Codex · Claude Code · Grok Bot 的公开用量重置信号',
-    lastReset: '最近一次扫描命中',
+    lastReset: '最近重置',
     estimatedNext: '示意下次窗口',
     prob24h: '24h 示意概率',
     overdue: '已越过中位窗口',
@@ -23,6 +23,8 @@ export const translations = {
     disclaimerTitle: '免责声明',
     disclaimer:
       '节奏估算并非官方承诺。个人 5 小时限额 / 周限额 ≠ 全局用量重置。数据来自公开追踪与社区汇总，可能滞后或不完整。请以各厂商官方说明为准。本站仅汇总公开信息，个人额度请在官方客户端查看。',
+    disclaimerShort:
+      '示意估算非官方承诺；个人限额 ≠ 全局重置。数据来自公开追踪，可能滞后。',
     methodologyTitle: '概率方法（透明说明）',
     methodology: `ResetRadar 的「示意」数字不是官方预报，也不是保证。
 
@@ -58,10 +60,10 @@ export const translations = {
     resetPending: '暂无重置记录',
     predictionTitle: '信号条 · 近日示意',
     predictionHint: '非预报 · 软峰靠近中位窗口',
-    calendarTitle: '月份切片',
-    calendarHint: '点日期或时间线节点，查看当日 Tibo 内容',
-    timelineTitle: '重置时间线',
-    timelineHint: '主视图 · 自 8 月起 · 点击节点展开帖文',
+    calendarTitle: '重置日历',
+    calendarHint: '点日期看当天记录',
+    timelineTitle: '重置日历',
+    timelineHint: '主视图 · 自 8 月起 · 点日期看当天记录',
     backToLatest: '跳到最近',
     monthSummary: '本月扫描',
     kindUsageReset: 'USAGE · 用量',
@@ -88,7 +90,7 @@ export const translations = {
     brand: 'ResetRadar',
     brandEn: '重置雷达',
     tagline: 'Scan public usage-reset signals for Codex · Claude Code · Grok Bot',
-    lastReset: 'Last scan hit',
+    lastReset: 'Last reset',
     estimatedNext: 'Illustrative next window',
     prob24h: '24h illustrative probability',
     overdue: 'Past median window',
@@ -106,6 +108,8 @@ export const translations = {
     disclaimerTitle: 'Disclaimer',
     disclaimer:
       'Cadence estimates are not official. Personal 5h / weekly limits ≠ global usage resets. Data comes from public tracking and community summaries and may be incomplete or delayed. Always defer to vendor announcements. This site aggregates public signals only — check the official client for your personal quota.',
+    disclaimerShort:
+      'Estimates are unofficial; personal limits ≠ global resets. Public tracking may lag.',
     methodologyTitle: 'Probability methodology (transparent)',
     methodology: `ResetRadar “illustrative” numbers are not an official forecast and not a guarantee.
 
@@ -141,10 +145,10 @@ The UI shows sample size n; when n is small, treat bars as weak signal. All time
     resetPending: 'No reset recorded',
     predictionTitle: 'Signal bars · near-term',
     predictionHint: 'Not a forecast · soft peak near median window',
-    calendarTitle: 'Month slice',
-    calendarHint: 'Pick a day or timeline node to see Tibo content',
-    timelineTitle: 'Reset timeline',
-    timelineHint: 'Primary view · from August · click a node for posts',
+    calendarTitle: 'Reset calendar',
+    calendarHint: "Click a date to see that day's records",
+    timelineTitle: 'Reset calendar',
+    timelineHint: 'Primary view · from August · click a date for posts',
     backToLatest: 'Jump to latest',
     monthSummary: 'Month scan',
     kindUsageReset: 'USAGE · reset',

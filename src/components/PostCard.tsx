@@ -9,20 +9,39 @@ interface Props {
   locale: Locale
 }
 
+const TIBO_AVATAR = '/tibo-avatar.jpg'
+
+function avatarSrc(post: Post): string | undefined {
+  if (post.avatarUrl) return post.avatarUrl
+  if (post.handle === '@thsottiaux') return TIBO_AVATAR
+  return undefined
+}
+
 export function PostCard({ post, locale }: Props) {
   const t = translations[locale]
   const name = locale === 'zh' && post.authorZh ? post.authorZh : post.author
   const initials = post.avatarInitials ?? name.slice(0, 2).toUpperCase()
+  const src = avatarSrc(post)
 
   return (
     <article className="rounded-2xl border border-white/10 bg-[#0d121a]/90 p-4 shadow-[inset_0_1px_0_rgba(34,211,238,0.08)]">
       <div className="mb-3 flex items-start gap-3">
-        <div
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-fuchsia-500 text-xs font-semibold text-[#07090d]"
-          aria-hidden
-        >
-          {initials}
-        </div>
+        {src ? (
+          <img
+            src={src}
+            alt=""
+            width={40}
+            height={40}
+            className="h-10 w-10 shrink-0 rounded-full object-cover ring-1 ring-cyan-400/25"
+          />
+        ) : (
+          <div
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-cyan-400 to-fuchsia-500 text-xs font-semibold text-[#07090d]"
+            aria-hidden
+          >
+            {initials}
+          </div>
+        )}
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-0.5">
             <div className="flex min-w-0 items-baseline gap-1.5">

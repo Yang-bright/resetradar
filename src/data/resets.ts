@@ -36,6 +36,8 @@ export interface Post {
   authorZh?: string
   handle?: string
   avatarInitials?: string
+  /** Optional local/CDN avatar path (prefer over initials) */
+  avatarUrl?: string
 }
 
 export interface ResetEvent {

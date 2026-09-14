@@ -6,7 +6,7 @@ Unofficial bilingual **scan deck** for public / global usage resets of:
 2. **Claude Code** (Anthropic)
 3. **Grok Bot** (xAI / Grok)
 
-Dark radar identity (cyan / magenta on charcoal) with a **timeline-first** layout. Not affiliated with OpenAI, Anthropic, or xAI.
+Dark radar identity (cyan / magenta on charcoal) with a **calendar-first** layout. Not affiliated with OpenAI, Anthropic, or xAI.
 
 Footer placeholder: `resetradar.app`
 
@@ -16,8 +16,10 @@ Footer placeholder: `resetradar.app`
 
 ### 功能
 
-- 扫描台状态：最近命中、示意下次窗口、24h 示意概率、中位间隔（显示 n）
-- **时间线主视图**（自 2026-08-01）+ 月份切片；点击节点 / 日期查看 Tibo 帖文摘要
+- 首屏：一句话说明 + 产品 Tab
+- 主信息：最近重置（大号时间）+ 关联 Tibo 帖文
+- **重置日历**（自 2026-08-01）：点日期查看当天事件与 Tibo 内容
+- 可选一行「下次窗口示意」（中位间隔）；无每日虚假概率条
 - 产品切换：Codex / Claude Code / Grok Bot
 - 默认中文；语言切换写入 `localStorage`
 - 中文时间：**北京时间**；英文时间：**ET**
@@ -40,14 +42,7 @@ npm run build && npm run preview
 src/data/resets.ts
 ```
 
-请勿虚构推文 ID / URL；未知时使用公开主页链接（如 `https://x.com/thsottiaux`）。
-
-### 概率方法（简）
-
-- 中位间隔：相邻计入估算的用量类重置；长历史取近 10 个间隔；不足则回退文档中位值
-- 24h / 近日条形：**示意 / illustrative**，非预报；n 小时有提示
-
-**免责声明**：节奏估算 ≠ 官方承诺；个人限额 ≠ 全局重置。
+估算工具仍在 `src/utils/estimates.ts`，可按需复用，但不再主导 UI。
 
 ---
 
@@ -55,16 +50,22 @@ src/data/resets.ts
 
 ### Features
 
-- Scan status: last hit, illustrative next window, 24h illustrative probability, median gap (with n)
-- **Timeline-first** view (from 2026-08-01) + secondary month slice; day click → Tibo post cards
-- Product switcher: Codex / Claude Code / Grok Bot
-- Default locale **zh**; toggle persists in `localStorage`
-- zh: Beijing time; en: US Eastern (ET)
+- First screen: one-line tagline + product tabs
+- Primary: last reset (huge) + linked Tibo post
+- **Reset calendar** (from 2026-08-01): click a day for events + Tibo cards
+- Optional one-line next-window hint (median gap); no daily fake probability bars
+- Product tabs: Codex / Claude Code / Grok Bot
+- Default locale Chinese; toggle persists in `localStorage`
+- zh times: **Beijing**; en times: **US Eastern**
+- Source timestamps: **UTC ISO**
 
-### Stack
+### Run locally
 
-Vite + React + TypeScript + Tailwind CSS v4
+```bash
+npm install
+npm run dev
+```
 
-### License
-
-Unofficial community project. Data may be incomplete or delayed.
+```bash
+npm run build && npm run preview
+```
