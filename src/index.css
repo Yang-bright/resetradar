@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 html {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 body {
@@ -18,8 +18,8 @@ body {
     'Noto Sans SC',
     'Microsoft YaHei',
     sans-serif;
-  background: #07090d;
-  color: #e8eef7;
+  background: #f4f5f8;
+  color: #1e293b;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -27,13 +27,13 @@ body {
   min-height: 100dvh;
 }
 
-/* Subtle radar sweep motif */
+/* Subtle radar sweep motif — light-theme, low opacity */
 .rr-radar-grid {
   background-image:
-    radial-gradient(circle at 20% 0%, rgba(34, 211, 238, 0.12), transparent 42%),
-    radial-gradient(circle at 90% 10%, rgba(232, 121, 249, 0.1), transparent 40%),
-    linear-gradient(rgba(34, 211, 238, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(34, 211, 238, 0.04) 1px, transparent 1px);
+    radial-gradient(circle at 20% 0%, rgba(8, 145, 178, 0.06), transparent 42%),
+    radial-gradient(circle at 90% 10%, rgba(192, 38, 211, 0.05), transparent 40%),
+    linear-gradient(rgba(8, 145, 178, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(8, 145, 178, 0.035) 1px, transparent 1px);
   background-size: auto, auto, 48px 48px, 48px 48px;
 }
 
@@ -41,7 +41,7 @@ body {
   background: linear-gradient(
     180deg,
     transparent 0%,
-    rgba(34, 211, 238, 0.06) 50%,
+    rgba(8, 145, 178, 0.04) 50%,
     transparent 100%
   );
   animation: rr-scan 7s linear infinite;

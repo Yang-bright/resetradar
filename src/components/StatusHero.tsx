@@ -30,14 +30,14 @@ export function StatusHero({ product, locale, now }: Props) {
     : undefined
 
   return (
-    <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-[#0c1119] p-5 sm:p-7">
-      <div className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full border border-cyan-400/20" />
-      <div className="pointer-events-none absolute -right-2 -top-2 h-24 w-24 rounded-full border border-fuchsia-400/15" />
+    <section className="relative overflow-hidden rounded-3xl border border-slate-200/90 bg-white p-5 shadow-sm sm:p-7">
+      <div className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full border border-cyan-400/25" />
+      <div className="pointer-events-none absolute -right-2 -top-2 h-24 w-24 rounded-full border border-fuchsia-400/20" />
 
       {/* Title: product + 最近重置 — no SCAN clutter */}
-      <h2 className="text-lg font-semibold tracking-tight text-slate-100 sm:text-xl">
-        <span className="text-cyan-300">{name}</span>
-        <span className="mx-2 text-slate-600">·</span>
+      <h2 className="text-lg font-semibold tracking-tight text-slate-800 sm:text-xl">
+        <span className="text-cyan-700">{name}</span>
+        <span className="mx-2 text-slate-300">·</span>
         <span>{t.lastReset}</span>
       </h2>
 
@@ -49,17 +49,17 @@ export function StatusHero({ product, locale, now }: Props) {
               <p className="text-xs font-medium uppercase tracking-wider text-slate-500">
                 {t.lastReset}
               </p>
-              <p className="mt-1 text-3xl font-bold tracking-tight text-white sm:text-4xl md:text-[2.75rem]">
+              <p className="mt-1 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl md:text-[2.75rem]">
                 {formatDateTime(last, locale)}
               </p>
-              <p className="mt-2 text-sm text-slate-400">
+              <p className="mt-2 text-sm text-slate-600">
                 {formatWeekday(last, locale)}
-                <span className="mx-2 text-slate-600">·</span>
+                <span className="mx-2 text-slate-300">·</span>
                 {formatElapsed(last, now, locale)}
               </p>
             </>
           ) : (
-            <p className="text-3xl font-bold text-slate-600">{t.unknown}</p>
+            <p className="text-3xl font-bold text-slate-400">{t.unknown}</p>
           )}
         </div>
 

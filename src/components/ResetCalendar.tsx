@@ -195,10 +195,10 @@ export function ResetCalendar({ product, locale }: Props) {
       : `${t.monthSummaryLead}: ${monthCounts.all} ${t.countAllReset} · ${monthCounts.affected} ${t.countAffectedReset} · ${monthCounts.card} ${t.countResetCard}`
 
   return (
-    <section className="rounded-3xl border border-white/10 bg-[#0c1119] p-5 sm:p-7">
+    <section className="rounded-3xl border border-slate-200/90 bg-white p-5 shadow-sm sm:p-7">
       <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h3 className="text-xl font-bold tracking-tight text-white">
+          <h3 className="text-xl font-bold tracking-tight text-slate-900">
             {t.calendarTitle}
           </h3>
           <p className="mt-1 text-sm text-slate-500">{t.calendarHint}</p>
@@ -207,7 +207,7 @@ export function ResetCalendar({ product, locale }: Props) {
           <button
             type="button"
             onClick={goLatest}
-            className="rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:border-cyan-400/40 hover:text-cyan-200"
+            className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:border-cyan-400/50 hover:text-cyan-700"
           >
             {t.backToLatest}
           </button>
@@ -215,18 +215,18 @@ export function ResetCalendar({ product, locale }: Props) {
             <button
               type="button"
               onClick={goPrev}
-              className="rounded-lg border border-white/10 p-1.5 text-slate-400 transition hover:border-cyan-400/40 hover:text-cyan-200"
+              className="rounded-lg border border-slate-200 p-1.5 text-slate-500 transition hover:border-cyan-400/50 hover:text-cyan-700"
               aria-label="Previous month"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <span className="min-w-[8rem] text-center text-sm font-semibold text-slate-200">
+            <span className="min-w-[8rem] text-center text-sm font-semibold text-slate-800">
               {formatMonthTitle(viewYear, viewMonth, locale)}
             </span>
             <button
               type="button"
               onClick={goNext}
-              className="rounded-lg border border-white/10 p-1.5 text-slate-400 transition hover:border-cyan-400/40 hover:text-cyan-200"
+              className="rounded-lg border border-slate-200 p-1.5 text-slate-500 transition hover:border-cyan-400/50 hover:text-cyan-700"
               aria-label="Next month"
             >
               <ChevronRight className="h-4 w-4" />
@@ -235,19 +235,19 @@ export function ResetCalendar({ product, locale }: Props) {
         </div>
       </div>
 
-      <div className="mb-4 text-xs leading-relaxed text-slate-400 sm:text-sm">
+      <div className="mb-4 text-xs leading-relaxed text-slate-600 sm:text-sm">
         {monthSummary}
       </div>
 
       {allHistory.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-white/10 px-4 py-10 text-center text-sm text-slate-500">
+        <p className="rounded-2xl border border-dashed border-slate-200 px-4 py-10 text-center text-sm text-slate-500">
           {t.historyEmpty}
         </p>
       ) : (
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(16rem,1fr)] lg:items-start">
           {/* Left: calendar */}
           <div className="min-w-0">
-            <div className="rounded-2xl border border-cyan-500/15 bg-black/35 p-3 sm:p-4">
+            <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3 sm:p-4">
               <div className="mb-2 grid grid-cols-7 gap-1.5">
                 {t.weekdays.map((w) => (
                   <div
@@ -276,17 +276,17 @@ export function ResetCalendar({ product, locale }: Props) {
                       onClick={() => selectDay(key)}
                       className={`flex min-h-[3.75rem] flex-col items-center justify-center rounded-xl border px-0.5 py-1 text-sm transition ${
                         isSelected
-                          ? 'border-cyan-400/70 bg-cyan-500/20 text-cyan-50 shadow-[0_0_20px_rgba(34,211,238,0.18)]'
+                          ? 'border-cyan-500 bg-cyan-50 text-cyan-900 shadow-[0_0_16px_rgba(6,182,212,0.18)]'
                           : hasEvents
-                            ? 'border-white/10 bg-white/[0.03] text-slate-100 hover:border-cyan-400/40'
-                            : 'border-transparent text-slate-600 hover:bg-white/[0.04]'
+                            ? 'border-slate-200 bg-white text-slate-800 hover:border-cyan-400/60'
+                            : 'border-transparent text-slate-400 hover:bg-white/70'
                       }`}
                     >
                       <span className="rr-mono font-semibold tabular-nums">
                         {day}
                       </span>
                       {marker && (
-                        <span className="mt-0.5 max-w-full px-0.5 text-center text-[8px] leading-tight text-amber-200/90 line-clamp-2">
+                        <span className="mt-0.5 max-w-full px-0.5 text-center text-[8px] leading-tight text-amber-700 line-clamp-2">
                           {marker}
                         </span>
                       )}
@@ -302,7 +302,7 @@ export function ResetCalendar({ product, locale }: Props) {
             </div>
 
             {/* Color legend */}
-            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] text-slate-400">
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] text-slate-600">
               <span className="font-medium text-slate-500">{t.legendTitle}</span>
               {LEGEND_CATS.map((cat) => (
                 <span key={cat} className="inline-flex items-center gap-1.5">
@@ -313,21 +313,21 @@ export function ResetCalendar({ product, locale }: Props) {
                 </span>
               ))}
             </div>
-            <p className="mt-2 text-[11px] leading-relaxed text-slate-600">
+            <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
               {monthCounts.special > 0
                 ? t.specialEventsPresent
                 : t.specialEventsNote}
             </p>
-            <p className="mt-1 text-[11px] text-slate-600">{t.beijingNote}</p>
+            <p className="mt-1 text-[11px] text-slate-500">{t.beijingNote}</p>
           </div>
 
           {/* Right: day detail / 当日信号 */}
-          <div className="min-w-0 rounded-2xl border border-white/8 bg-black/25 p-4 sm:p-5">
+          <div className="min-w-0 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
             {selected && selectedDate ? (
               <>
                 <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
                   <div>
-                    <h4 className="text-base font-bold text-white">
+                    <h4 className="text-base font-bold text-slate-900">
                       {t.dayDetail}
                     </h4>
                     <p className="mt-0.5 text-xs text-slate-500">
@@ -344,13 +344,13 @@ export function ResetCalendar({ product, locale }: Props) {
                 </div>
 
                 {!hasDetail ? (
-                  <p className="rounded-xl border border-dashed border-white/10 bg-black/20 px-3 py-8 text-center text-sm text-slate-500">
+                  <p className="rounded-xl border border-dashed border-slate-200 bg-white px-3 py-8 text-center text-sm text-slate-500">
                     {t.noEventsDay}
                   </p>
                 ) : (
                   <>
                     {selectedPrimaryKind && (
-                      <div className="mb-3 text-sm font-semibold text-slate-100">
+                      <div className="mb-3 text-sm font-semibold text-slate-800">
                         {statusTitle(selectedPrimaryKind, name, locale)}
                       </div>
                     )}
@@ -360,7 +360,7 @@ export function ResetCalendar({ product, locale }: Props) {
                         return (
                           <li
                             key={`${e.date}-${e.kind}-${e.note}`}
-                            className="rounded-xl border border-white/5 bg-black/30 px-3 py-2 text-sm text-slate-300"
+                            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
                           >
                             <span
                               className={`mr-2 inline-flex rounded-md px-1.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${
@@ -381,7 +381,7 @@ export function ResetCalendar({ product, locale }: Props) {
                               {' '}
                               · {locale === 'zh' ? e.scopeZh : e.scope}
                             </span>
-                            <div className="mt-1 rr-mono text-[11px] text-slate-600">
+                            <div className="mt-1 rr-mono text-[11px] text-slate-400">
                               {formatDateTime(e.date, locale)}
                             </div>
                           </li>

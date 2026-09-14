@@ -22,19 +22,19 @@ export default function App() {
     locale === 'zh' ? activeProduct.caveatZh : activeProduct.caveat
 
   return (
-    <div className="rr-radar-grid relative min-h-dvh overflow-hidden bg-[#07090d] text-slate-100">
+    <div className="rr-radar-grid relative min-h-dvh overflow-hidden bg-[#f4f5f8] text-slate-800">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="rr-scanline absolute inset-x-0 top-0 h-40 opacity-40" />
+        <div className="rr-scanline absolute inset-x-0 top-0 h-40 opacity-30" />
       </div>
 
       <div className="relative mx-auto max-w-6xl px-4 pb-16 pt-8 sm:px-6">
         <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="mb-2 flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-md border border-cyan-400/35 bg-cyan-500/10 px-2.5 py-0.5 rr-mono text-[10px] font-semibold tracking-[0.22em] text-cyan-300">
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-cyan-500/30 bg-cyan-50 px-2.5 py-0.5 rr-mono text-[10px] font-semibold tracking-[0.22em] text-cyan-700">
                 <span className="relative flex h-1.5 w-1.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-400 opacity-60" />
-                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-cyan-400" />
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-cyan-500 opacity-50" />
+                  <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-cyan-500" />
                 </span>
                 RESETRADAR
               </span>
@@ -42,10 +42,10 @@ export default function App() {
                 {zoneHint(locale)}
               </span>
             </div>
-            <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+            <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
               {t.brand}
             </h1>
-            <p className="mt-2 max-w-2xl text-sm text-slate-400 sm:text-base">
+            <p className="mt-2 max-w-2xl text-sm text-slate-600 sm:text-base">
               {t.tagline}
             </p>
           </div>
@@ -61,8 +61,8 @@ export default function App() {
         </div>
 
         {caveat && (
-          <p className="mb-5 text-xs leading-relaxed text-amber-200/70">
-            <span className="font-semibold text-amber-200/90">{t.caveat}: </span>
+          <p className="mb-5 text-xs leading-relaxed text-amber-800/80">
+            <span className="font-semibold text-amber-800">{t.caveat}: </span>
             {caveat}
           </p>
         )}
@@ -77,12 +77,12 @@ export default function App() {
           <ResetCalendar product={activeProduct} locale={locale} />
         </div>
 
-        <footer className="border-t border-white/5 pt-6 text-center text-xs text-slate-600">
+        <footer className="border-t border-slate-200 pt-6 text-center text-xs text-slate-500">
           <p className="mx-auto max-w-2xl leading-relaxed text-slate-500">
             {t.disclaimerShort}
           </p>
           <p className="mt-3">{t.footerCopy}</p>
-          <p className="mt-1 rr-mono text-slate-500">{t.footerSite}</p>
+          <p className="mt-1 rr-mono text-slate-400">{t.footerSite}</p>
         </footer>
       </div>
     </div>

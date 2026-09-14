@@ -30,28 +30,28 @@ export function kindLabel(kind: ResetKind, locale: Locale): string {
 export function kindChipClass(kind: ResetKind): string {
   switch (kind) {
     case 'usage_reset':
-      return 'bg-cyan-500/15 text-cyan-300 ring-cyan-400/30'
+      return 'bg-cyan-50 text-cyan-800 ring-cyan-400/40'
     case 'reset_card':
-      return 'bg-fuchsia-500/15 text-fuchsia-300 ring-fuchsia-400/30'
+      return 'bg-fuchsia-50 text-fuchsia-800 ring-fuchsia-400/40'
     case 'token_reset':
-      return 'bg-violet-500/15 text-violet-300 ring-violet-400/30'
+      return 'bg-violet-50 text-violet-800 ring-violet-400/40'
     case 'special':
-      return 'bg-amber-500/15 text-amber-200 ring-amber-400/35'
+      return 'bg-amber-50 text-amber-800 ring-amber-400/45'
     default:
-      return 'bg-slate-500/10 text-slate-300 ring-slate-400/25'
+      return 'bg-slate-100 text-slate-700 ring-slate-300/60'
   }
 }
 
 export function kindDotClass(kind: ResetKind): string {
   switch (kind) {
     case 'usage_reset':
-      return 'bg-cyan-400'
+      return 'bg-cyan-500'
     case 'reset_card':
-      return 'bg-fuchsia-400'
+      return 'bg-fuchsia-500'
     case 'token_reset':
-      return 'bg-violet-400'
+      return 'bg-violet-500'
     case 'special':
-      return 'bg-amber-300'
+      return 'bg-amber-500'
     default:
       return 'bg-slate-400'
   }
@@ -122,13 +122,13 @@ export function categoryLabel(cat: EventCategory, locale: Locale): string {
 export function categoryDotClass(cat: EventCategory): string {
   switch (cat) {
     case 'all_reset':
-      return 'bg-cyan-400'
+      return 'bg-cyan-500'
     case 'affected_reset':
-      return 'bg-orange-400'
+      return 'bg-orange-500'
     case 'reset_card':
-      return 'bg-fuchsia-400'
+      return 'bg-fuchsia-500'
     case 'special':
-      return 'bg-amber-300'
+      return 'bg-amber-500'
     default:
       return 'bg-slate-400'
   }
@@ -137,15 +137,15 @@ export function categoryDotClass(cat: EventCategory): string {
 export function categoryChipClass(cat: EventCategory): string {
   switch (cat) {
     case 'all_reset':
-      return 'bg-cyan-500/15 text-cyan-300 ring-cyan-400/30'
+      return 'bg-cyan-50 text-cyan-800 ring-cyan-400/40'
     case 'affected_reset':
-      return 'bg-orange-500/15 text-orange-300 ring-orange-400/30'
+      return 'bg-orange-50 text-orange-800 ring-orange-400/40'
     case 'reset_card':
-      return 'bg-fuchsia-500/15 text-fuchsia-300 ring-fuchsia-400/30'
+      return 'bg-fuchsia-50 text-fuchsia-800 ring-fuchsia-400/40'
     case 'special':
-      return 'bg-amber-500/15 text-amber-200 ring-amber-400/35'
+      return 'bg-amber-50 text-amber-800 ring-amber-400/45'
     default:
-      return 'bg-slate-500/10 text-slate-300 ring-slate-400/25'
+      return 'bg-slate-100 text-slate-700 ring-slate-300/60'
   }
 }
 

@@ -33,8 +33,8 @@ export function PredictionPanel({ product, locale, now, embedded }: Props) {
 
   const pct = Math.round(p24 * 100)
   const shell = embedded
-    ? 'h-full rounded-2xl border border-white/8 bg-black/30 px-4 py-3.5 sm:px-5'
-    : 'rounded-2xl border border-white/8 bg-[#0c1119]/85 px-4 py-3.5 sm:px-5'
+    ? 'h-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 sm:px-5'
+    : 'rounded-2xl border border-slate-200 bg-white px-4 py-3.5 shadow-sm sm:px-5'
 
   return (
     <section className={shell}>
@@ -43,11 +43,11 @@ export function PredictionPanel({ product, locale, now, embedded }: Props) {
           {t.estimatedNext}
         </div>
         <div className="mt-1 flex flex-wrap items-baseline gap-2">
-          <span className="text-base font-semibold text-slate-100 sm:text-lg">
+          <span className="text-base font-semibold text-slate-800 sm:text-lg">
             {formatDateTime(next, locale)}
           </span>
           {overdue && (
-            <span className="rounded-md bg-fuchsia-500/15 px-1.5 py-0.5 text-[11px] font-medium text-fuchsia-300">
+            <span className="rounded-md bg-fuchsia-100 px-1.5 py-0.5 text-[11px] font-medium text-fuchsia-700">
               {t.overdue}
             </span>
           )}
@@ -55,7 +55,7 @@ export function PredictionPanel({ product, locale, now, embedded }: Props) {
         {countdown && (
           <p
             className={`mt-1 text-xs ${
-              countdown.overdue ? 'text-fuchsia-300/90' : 'text-slate-500'
+              countdown.overdue ? 'text-fuchsia-700' : 'text-slate-500'
             }`}
           >
             {countdown.text}
@@ -63,18 +63,18 @@ export function PredictionPanel({ product, locale, now, embedded }: Props) {
         )}
       </div>
 
-      <div className="mt-3 border-t border-white/5 pt-3">
+      <div className="mt-3 border-t border-slate-200 pt-3">
         <div className="flex items-baseline justify-between gap-2">
           <span className="text-[11px] font-medium uppercase tracking-wider text-slate-500">
             {t.prob24h}
           </span>
-          <span className="rr-mono text-xl font-semibold tabular-nums text-cyan-200">
+          <span className="rr-mono text-xl font-semibold tabular-nums text-cyan-700">
             {pct}%
           </span>
         </div>
-        <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/5">
+        <div className="mt-2 h-1 overflow-hidden rounded-full bg-slate-200">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-cyan-400/90 to-fuchsia-400/80"
+            className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-fuchsia-500"
             style={{ width: `${Math.max(4, pct)}%` }}
           />
         </div>

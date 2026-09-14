@@ -396,12 +396,13 @@ export const products: ProductData[] = [
         postIds: ['codex-2026-09-09-banked'],
       },
       {
-        date: '2026-09-10T16:00:00.000Z',
+        // Noon Beijing (UTC+8) on Sep 10 so zh calendar day = 9/10; also Sep 10 ET
+        date: '2026-09-10T04:00:00.000Z',
         kind: 'special',
         scope: 'ChatGPT Pro ($200 / Pro 20X)',
         scopeZh: 'ChatGPT Pro（$200 / Pro 20X）',
-        note: 'New Pro $200 (Pro 20X) sign-ups/upgrades paused due to Astra demand; existing subscriptions unaffected. Public: Tibo / The Verge / OpenAI help ~Sep 10–11 2026.',
-        noteZh: '$200 Pro（Pro 20X）新购/升级暂停（Astra 需求）；现有订阅不受影响。公开来源：Tibo / The Verge / OpenAI 帮助中心 ~2026-09-10–11。',
+        note: 'New Pro $200 (Pro 20X) sign-ups/upgrades paused due to Astra demand; existing subscriptions unaffected. Public: OpenAI help as of September 10, 2026 (also Tibo / The Verge).',
+        noteZh: '$200 Pro（Pro 20X）新购/升级暂停（Astra 需求）；现有订阅不受影响。公开来源：OpenAI 帮助中心 as of 2026-09-10（亦见 Tibo / The Verge）。',
         countsForEstimate: false,
         inMainHistory: true,
         markerLabel: '$200 Pro pause',
