@@ -2,6 +2,7 @@ import type { Post, ProductData, ResetEvent } from '../data/resets'
 import type { Locale } from '../i18n/translations'
 import { translations } from '../i18n/translations'
 import { lastResetDate } from '../utils/estimates'
+import { unfulfilledHeadsUpPosts } from '../utils/headsUp'
 import {
   calendarDayKey,
   formatDateTime,
@@ -48,30 +49,6 @@ function postsForLastHit(product: ProductData, last: Date, locale: Locale): Post
     .sort((a, b) => +new Date(b.date) - +new Date(a.date))
 }
 
-/** Heads-up / other posts after the last reset (upcoming context). */
-function upcomingHeadsUpPosts(
-  product: ProductData,
-  last: Date | null,
-): Post[] {
-  if (!last) return []
-  const lastMs = last.getTime()
-  const byId = new Map(product.posts.map((p) => [p.id, p]))
-  const linked = new Map<string, Post>()
-
-  for (const e of product.events) {
-    if (e.kind !== 'other') continue
-    if (+new Date(e.date) <= lastMs) continue
-    for (const id of e.postIds ?? []) {
-      const post = byId.get(id)
-      if (post && +new Date(post.date) > lastMs) linked.set(post.id, post)
-    }
-  }
-
-  return [...linked.values()]
-    .sort((a, b) => +new Date(b.date) - +new Date(a.date))
-    .slice(0, 2)
-}
-
 /**
  * Clear two-column hero:
  * LEFT 已发生 — last reset + related official posts for that hit
@@ -82,7 +59,7 @@ export function StatusHero({ product, locale, now }: Props) {
   const last = lastResetDate(product)
   const name = locale === 'zh' ? product.nameZh : product.name
   const hitPosts = last ? postsForLastHit(product, last, locale) : []
-  const upcoming = upcomingHeadsUpPosts(product, last)
+  const upcoming = unfulfilledHeadsUpPosts(product).slice(0, 3)
 
   return (
     <section className="relative overflow-hidden rounded-3xl border border-slate-200/90 bg-white p-5 shadow-sm sm:p-7">

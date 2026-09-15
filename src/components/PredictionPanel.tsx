@@ -50,9 +50,16 @@ export function PredictionPanel({
       </div>
 
       {futures.length === 0 ? (
-        <p className="mt-2 text-2xl font-bold tracking-tight text-slate-400 sm:text-3xl">
-          {t.noneYet}
-        </p>
+        <div className="mt-2">
+          <p className="text-2xl font-bold tracking-tight text-slate-400 sm:text-3xl">
+            {t.noneYet}
+          </p>
+          {upcomingPosts.length > 0 && (
+            <p className="mt-2 text-xs leading-relaxed text-amber-700/90">
+              {t.headsUpActiveNote}
+            </p>
+          )}
+        </div>
       ) : (
         <ul className="mt-2 space-y-3">
           {futures.map((est) => {
@@ -89,7 +96,7 @@ export function PredictionPanel({
 
       {futures.length > 0 && (
         <p className="mt-3 text-[10px] leading-relaxed text-slate-400">
-          {t.probDisclaimer}
+          {upcomingPosts.length > 0 ? t.probDisclaimerHeadsUp : t.probDisclaimer}
         </p>
       )}
 

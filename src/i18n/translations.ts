@@ -10,6 +10,8 @@ export const translations = {
     prob24h: '24h 示意概率',
     windowProb: '该窗口示意概率',
     probDisclaimer: '示意概率，非官方预报',
+    probDisclaimerHeadsUp: '示意概率（已因公开预告上调）· 非官方预报',
+    headsUpActiveNote: '已有公开重置预告尚未兑现；日期窗口暂无法可靠推算。',
     monthEmpty: '本月暂无公开全局重置记录',
     monthCountNote: '按北京时间日期统计',
     overdue: '已越过中位窗口',
@@ -37,7 +39,8 @@ export const translations = {
 
 1) 中位间隔：取 consecutive、计入估算的用量类重置（usage_reset / token_reset）之间的间隔天数，算中位数；样本不足时回退到文档中位值（Codex ≈ 3.3 天，来自 whenreset.dev 近 10 次）。
 2) 各「预计下次」窗口旁的示意概率：相对该窗口的接近程度（多窗口时为相对份额）；事件很少时会整体下调。
-3) 近日条形：在预计日附近放一个软峰（高斯状），再夹到约 2%–55%，并标注「示意 / illustrative」。
+3) 若存在尚未被后续全员重置兑现的公开预告（如 Tibo heads-up），示意概率会上调并钉在右侧；已兑现的预告只留在日历／左侧「已发生」。
+4) 近日条形：在预计日附近放一个软峰（高斯状），再夹到约 2%–55%，并标注「示意 / illustrative」。
 
 界面会显示样本量 n；n 较小时请当作弱信号。原始时间一律 UTC ISO；中文界面显示北京时间，英文界面显示美国东部时间（ET）。`,
     methodologyShort:
@@ -126,6 +129,8 @@ export const translations = {
     prob24h: '24h illustrative probability',
     windowProb: 'Window illustrative probability',
     probDisclaimer: 'Illustrative only — not an official forecast',
+    probDisclaimerHeadsUp: 'Illustrative (raised by public heads-up) — not an official forecast',
+    headsUpActiveNote: 'A public reset heads-up is still open; no reliable date window yet.',
     monthEmpty: 'No public global resets recorded this month',
     monthCountNote: 'Counted by display-timezone calendar days',
     overdue: 'Past median window',
@@ -153,7 +158,8 @@ export const translations = {
 
 1) Median gap: take consecutive estimate-eligible usage-class resets (usage_reset / token_reset), compute the median interval in days; if the sample is too small, fall back to a documented median (Codex ≈ 3.3d from whenreset.dev last-10).
 2) Per next-window illustrative probability: rises near that slot (relative share when multiple); sparse histories are dampened.
-3) Near-term bars: soft Gaussian-ish mass peaking near the estimate, clamped roughly 2%–55%, labeled 示意 / illustrative.
+3) An unfulfilled public heads-up (e.g. Tibo) raises illustrative odds and pins on the right; fulfilled heads-ups stay on the calendar / left "Occurred" column.
+4) Near-term bars: soft Gaussian-ish mass peaking near the estimate, clamped roughly 2%–55%, labeled 示意 / illustrative.
 
 The UI shows sample size n; when n is small, treat bars as weak signal. All timestamps are UTC ISO; Chinese UI uses Beijing time, English UI uses US Eastern (ET).`,
     methodologyShort:

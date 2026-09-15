@@ -39,6 +39,11 @@ export interface Post {
   avatarInitials?: string
   /** Optional local/CDN avatar path (prefer over initials) */
   avatarUrl?: string
+  /**
+   * Public pre-announcement of an upcoming usage reset (e.g. Tibo heads-up).
+   * Used to pin unfulfilled alerts and boost illustrative probability.
+   */
+  signal?: 'heads-up'
 }
 
 export interface ResetEvent {
@@ -117,6 +122,7 @@ export const products: ProductData[] = [
       },
       {
         id: 'codex-2026-09-12-heads',
+        signal: 'heads-up',
         date: '2026-09-12T03:20:00.000Z',
         summary:
           'Hi Astra users. A reset and a quick update on quality issues that have been posted around. Working with some of you, we have found and fixed several issues — reset landing shortly.',
@@ -168,6 +174,7 @@ export const products: ProductData[] = [
       },
       {
         id: 'codex-2026-09-08-heads',
+        signal: 'heads-up',
         date: '2026-09-08T01:34:00.000Z',
         summary:
           'Never gonna give you up… Thanks for the patience — reset incoming for Astra week.',
@@ -245,6 +252,7 @@ export const products: ProductData[] = [
       },
       {
         id: 'codex-2026-08-30-heads',
+        signal: 'heads-up',
         date: '2026-08-30T18:00:00.000Z',
         summary:
           'Heads-up: celebratory usage reset planned around 6pm PST for the 25M milestone (landed Aug 31 02:34 UTC).',

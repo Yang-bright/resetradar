@@ -1,6 +1,11 @@
 import type { ProductData, ResetEvent } from '../data/resets'
 import { calendarDayKey, zoneForLocale } from './time'
 import type { Locale } from '../i18n/translations'
+import {
+  hasUnfulfilledHeadsUp,
+  HEADS_UP_PROB_ADD,
+  HEADS_UP_PROB_MULT,
+} from './headsUp'
 import { addDays, startOfDay } from 'date-fns'
 import { toZonedTime, fromZonedTime } from 'date-fns-tz'
 
@@ -206,6 +211,12 @@ export function estimateSlotProbability(
   }
 
   if (sparse) p *= 0.7
+
+  // Public unfulfilled heads-up (e.g. Tibo) raises illustrative odds — still capped.
+  if (hasUnfulfilledHeadsUp(product)) {
+    p = p * HEADS_UP_PROB_MULT + HEADS_UP_PROB_ADD
+  }
+
   return Math.max(0.03, Math.min(0.7, p))
 }
 
@@ -283,13 +294,15 @@ export function dailyPredictions(
       }
     }
     if (sparse) w *= 0.7
+    if (hasUnfulfilledHeadsUp(product)) w *= HEADS_UP_PROB_MULT
     weights.push(Math.max(0.02, w))
   }
 
   const sum = weights.reduce((a, b) => a + b, 0) || 1
   // Scale so peak day lands in a readable 15–55% band (illustrative)
   const peak = Math.max(...weights)
-  const targetPeak = sparse ? 0.22 : 0.38
+  const heads = hasUnfulfilledHeadsUp(product)
+  const targetPeak = sparse ? (heads ? 0.3 : 0.22) : heads ? 0.48 : 0.38
   const scale = peak > 0 ? targetPeak / peak : 1
 
   return dates.map((date, i) => {
