@@ -8,7 +8,7 @@ Unofficial bilingual **scan deck** for public / global usage resets of:
 
 Dark radar identity (cyan / magenta on charcoal) with a **calendar-first** layout. Not affiliated with OpenAI, Anthropic, or xAI.
 
-Footer placeholder: `resetradar.app`
+Production domain: `https://resetradar.wiki`
 
 ---
 

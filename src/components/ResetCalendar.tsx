@@ -73,56 +73,42 @@ function postsForSelection(
     .sort((a, b) => +new Date(b.date) - +new Date(a.date))
 }
 
-/** Posts linked to one event (for nesting under the day-detail event card). */
-function postsForEvent(product: ProductData, event: ResetEvent): Post[] {
-  const byId = new Map(product.posts.map((p) => [p.id, p]))
-  const out: Post[] = []
-  for (const id of event.postIds ?? []) {
-    const post = byId.get(id)
-    if (post) out.push(post)
-  }
-  return out
-}
-
 /** Visible history from HISTORY_CUTOFF */
 function historyEvents(product: ProductData): ResetEvent[] {
   const cut = +new Date(HISTORY_CUTOFF)
   return product.events.filter((e) => +new Date(e.date) >= cut)
 }
 
-function dayMarkerLabel(
+function dayMarkerLabels(
   events: ResetEvent[],
   locale: Locale,
-): string | null {
-  if (events.length === 0) return null
+): string[] {
+  if (events.length === 0) return []
   const t = translations[locale]
-  // Prefer explicit markerLabel on any event (special first, then others)
-  const prefer = [...events].sort((a, b) => {
-    if (a.kind === 'special' && b.kind !== 'special') return -1
-    if (b.kind === 'special' && a.kind !== 'special') return 1
-    return 0
-  })
-  for (const e of prefer) {
+  const labels: string[] = []
+  for (const e of events) {
     const label =
       locale === 'zh'
         ? e.markerLabelZh ?? e.markerLabel
         : e.markerLabel ?? e.markerLabelZh
-    if (label) return label
+    if (label && !labels.includes(label)) labels.push(label)
   }
-  // Fallback short labels for 全员重置 / 发卡 / 部分重置 / 特殊
-  const cat = primaryCategory(events)
-  switch (cat) {
-    case 'special':
-      return t.catSpecial
-    case 'all_reset':
-      return t.markerAllReset
-    case 'reset_card':
-      return t.markerCard
-    case 'affected_reset':
-      return t.markerAffected
-    default:
-      return null
+
+  const categories = [...new Set(events.map(eventCategory))]
+  for (const cat of categories) {
+    const label =
+      cat === 'special'
+        ? t.catSpecial
+        : cat === 'all_reset'
+          ? t.markerAllReset
+          : cat === 'reset_card'
+            ? t.markerCard
+            : cat === 'affected_reset'
+              ? t.markerAffected
+              : null
+    if (label && !labels.includes(label)) labels.push(label)
   }
+  return labels.slice(0, 2)
 }
 
 const LEGEND_CATS: EventCategory[] = [
@@ -177,27 +163,23 @@ export function ResetCalendar({ product, locale }: Props) {
     return map
   }, [allHistory, locale, viewYear, viewMonth])
 
-  // Count distinct display-TZ calendar days per category (matches grid dots)
+  // Count normalized event records. Announcements/updates from one issuance are
+  // consolidated in the data layer, while separate same-day records stay visible.
   const monthCounts = useMemo(() => {
-    const all = new Set<string>()
-    const affected = new Set<string>()
-    const card = new Set<string>()
-    const special = new Set<string>()
-    for (const [key, list] of monthEvents.entries()) {
+    let all = 0
+    let affected = 0
+    let card = 0
+    let special = 0
+    for (const list of monthEvents.values()) {
       for (const e of list) {
         const cat = eventCategory(e)
-        if (cat === 'all_reset') all.add(key)
-        else if (cat === 'affected_reset') affected.add(key)
-        else if (cat === 'reset_card') card.add(key)
-        else if (cat === 'special') special.add(key)
+        if (cat === 'all_reset') all += 1
+        else if (cat === 'affected_reset') affected += 1
+        else if (cat === 'reset_card') card += 1
+        else if (cat === 'special') special += 1
       }
     }
-    return {
-      all: all.size,
-      affected: affected.size,
-      card: card.size,
-      special: special.size,
-    }
+    return { all, affected, card, special }
   }, [monthEvents])
 
   /** Latest event day key in a given display month, or null if empty. */
@@ -241,6 +223,39 @@ export function ResetCalendar({ product, locale }: Props) {
   const selectedPosts = selected
     ? postsForSelection(product, selected, selectedEvents, locale)
     : []
+  const selectedEventPosts = useMemo(() => {
+    const byId = new Map(product.posts.map((post) => [post.id, post]))
+    const assigned = new Map<string, ResetEvent>()
+    const result = new Map<ResetEvent, Post[]>(
+      selectedEvents.map((event) => [event, []]),
+    )
+
+    // A post may be linked by both a completed reset and its heads-up event.
+    // Assign it once, to the event whose timestamp is closest to the post.
+    for (const event of selectedEvents) {
+      for (const id of event.postIds ?? []) {
+        const post = byId.get(id)
+        if (!post) continue
+        const current = assigned.get(id)
+        if (
+          !current ||
+          Math.abs(+new Date(event.date) - +new Date(post.date)) <
+            Math.abs(+new Date(current.date) - +new Date(post.date))
+        ) {
+          assigned.set(id, event)
+        }
+      }
+    }
+
+    for (const [id, event] of assigned) {
+      const post = byId.get(id)
+      if (post) result.get(event)?.push(post)
+    }
+    for (const posts of result.values()) {
+      posts.sort((a, b) => +new Date(b.date) - +new Date(a.date))
+    }
+    return result
+  }, [product, selectedEvents])
   const selectedPrimary = primaryCategory(selectedEvents)
   const selectedDate = selected ? parseDayKey(selected) : null
   const hasDetail = selected !== null && selectedEvents.length > 0
@@ -277,17 +292,17 @@ export function ResetCalendar({ product, locale }: Props) {
 
   const monthSummary =
     locale === 'zh'
-      ? `${t.monthSummaryLead}：${monthCounts.all} ${t.countAllReset} · ${monthCounts.affected} ${t.countAffectedReset} · ${monthCounts.card} ${t.countResetCard}`
-      : `${t.monthSummaryLead}: ${monthCounts.all} ${t.countAllReset} · ${monthCounts.affected} ${t.countAffectedReset} · ${monthCounts.card} ${t.countResetCard}`
+      ? `${t.monthSummaryLead}：${monthCounts.all} ${t.countAllReset} · ${monthCounts.affected} ${t.countAffectedReset} · ${monthCounts.card} ${t.countResetCard}${monthCounts.special ? ` · ${monthCounts.special} ${t.catSpecial}` : ''}`
+      : `${t.monthSummaryLead}: ${monthCounts.all} ${t.countAllReset} · ${monthCounts.affected} ${t.countAffectedReset} · ${monthCounts.card} ${t.countResetCard}${monthCounts.special ? ` · ${monthCounts.special} ${t.catSpecial}` : ''}`
 
   return (
-    <section className="rounded-3xl border border-slate-200/90 bg-white p-5 shadow-sm sm:p-7">
-      <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+    <section className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-sm sm:p-5">
+      <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h3 className="text-xl font-bold tracking-tight text-slate-900">
             {t.calendarTitle}
           </h3>
-          <p className="mt-1 text-sm text-slate-500">{t.calendarHint}</p>
+          <p className="mt-0.5 text-xs text-slate-500">{t.calendarHint}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button
@@ -321,9 +336,9 @@ export function ResetCalendar({ product, locale }: Props) {
         </div>
       </div>
 
-      <div className="mb-4 text-xs leading-relaxed text-slate-600 sm:text-sm">
-        <div>{monthSummary}</div>
-        <div className="mt-1 text-[11px] text-slate-400">{t.monthCountNote}</div>
+      <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-cyan-100 bg-cyan-50/55 px-3 py-2 text-xs leading-relaxed text-slate-700 sm:text-sm">
+        <div className="font-semibold">{monthSummary}</div>
+        <div className="text-[10px] text-slate-500">{t.monthCountNote}</div>
       </div>
 
       {allHistory.length === 0 ? (
@@ -331,11 +346,11 @@ export function ResetCalendar({ product, locale }: Props) {
           {t.historyEmpty}
         </p>
       ) : (
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1.35fr)_minmax(16rem,1fr)] lg:items-start">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.25fr)_minmax(18rem,0.95fr)] lg:items-start">
           {/* Left: calendar */}
           <div className="min-w-0">
-            <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-3 sm:p-4">
-              <div className="mb-2 grid grid-cols-7 gap-1.5">
+            <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-2.5 sm:p-3">
+              <div className="mb-1 grid grid-cols-7 gap-1">
                 {t.weekdays.map((w) => (
                   <div
                     key={w}
@@ -345,15 +360,17 @@ export function ResetCalendar({ product, locale }: Props) {
                   </div>
                 ))}
               </div>
-              <div className="grid grid-cols-7 gap-1.5">
+              <div className="grid grid-cols-7 gap-1">
                 {cells.map((day, idx) => {
                   if (day === null) {
-                    return <div key={`e-${idx}`} className="min-h-[4.75rem]" />
+                    return <div key={`e-${idx}`} className="min-h-[3.5rem]" />
                   }
                   const key = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
                   const dayEvents = monthEvents.get(key) ?? []
-                  const cat = primaryCategory(dayEvents)
-                  const marker = dayMarkerLabel(dayEvents, locale)
+                  const markers = dayMarkerLabels(dayEvents, locale)
+                  const categories = [...new Set(dayEvents.map(eventCategory))].filter(
+                    (item): item is EventCategory => item !== 'other',
+                  )
                   const isSelected = selected === key
                   const hasEvents = dayEvents.length > 0
                   return (
@@ -361,7 +378,7 @@ export function ResetCalendar({ product, locale }: Props) {
                       key={key}
                       type="button"
                       onClick={() => selectDay(key)}
-                      className={`flex min-h-[4.75rem] flex-col items-center justify-center rounded-xl border px-0.5 py-1 text-sm transition ${
+                      className={`relative flex min-h-[3.5rem] flex-col items-center justify-center rounded-lg border px-0.5 py-1 text-xs transition ${
                         isSelected
                           ? 'border-cyan-500 bg-cyan-50 text-cyan-900 shadow-[0_0_16px_rgba(6,182,212,0.18)]'
                           : hasEvents
@@ -372,27 +389,25 @@ export function ResetCalendar({ product, locale }: Props) {
                       <span className="rr-mono font-semibold tabular-nums">
                         {day}
                       </span>
-                      {marker && (
-                        <span
-                          className={`mt-0.5 max-w-full px-0.5 text-center text-[9px] font-semibold leading-tight line-clamp-2 ${
-                            cat === 'special'
-                              ? 'text-amber-700'
-                              : cat === 'all_reset'
-                                ? 'text-cyan-700'
-                                : cat === 'affected_reset'
-                                  ? 'text-orange-700'
-                                  : cat === 'reset_card'
-                                    ? 'text-fuchsia-700'
-                                    : 'text-slate-600'
-                          }`}
-                        >
-                          {marker}
+                      {dayEvents.length > 1 && (
+                        <span className="absolute right-1 top-1 rr-mono text-[8px] font-bold text-slate-400">
+                          ×{dayEvents.length}
                         </span>
                       )}
-                      {cat && (
-                        <span
-                          className={`mt-1 h-1.5 w-1.5 rounded-full ${categoryDotClass(cat)}`}
-                        />
+                      {markers.map((marker) => (
+                        <span key={marker} className="mt-0.5 max-w-full truncate px-0.5 text-center text-[8px] font-semibold leading-tight text-slate-600">
+                          {marker}
+                        </span>
+                      ))}
+                      {categories.length > 0 && (
+                        <span className="mt-1 flex items-center gap-1">
+                          {categories.map((category) => (
+                            <span
+                              key={category}
+                              className={`h-1.5 w-1.5 rounded-full ${categoryDotClass(category)}`}
+                            />
+                          ))}
+                        </span>
                       )}
                     </button>
                   )
@@ -401,7 +416,7 @@ export function ResetCalendar({ product, locale }: Props) {
             </div>
 
             {/* Color legend */}
-            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] text-slate-600">
+            <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-slate-600">
               <span className="font-medium text-slate-500">{t.legendTitle}</span>
               {LEGEND_CATS.map((cat) => (
                 <span key={cat} className="inline-flex items-center gap-1.5">
@@ -412,21 +427,21 @@ export function ResetCalendar({ product, locale }: Props) {
                 </span>
               ))}
             </div>
-            <p className="mt-2 text-[11px] leading-relaxed text-slate-500">
+            <p className="mt-1 text-[10px] leading-relaxed text-slate-500">
               {monthCounts.special > 0
                 ? t.specialEventsPresent
                 : t.specialEventsNote}
             </p>
-            <p className="mt-1 text-[11px] text-slate-500">{t.beijingNote}</p>
+            <p className="mt-0.5 text-[10px] text-slate-500">{t.beijingNote}</p>
           </div>
 
           {/* Right: day detail / 当日信号 */}
-          <div className="min-w-0 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
+          <div className="min-w-0 max-h-[27rem] overflow-y-auto rounded-xl border border-slate-200 bg-slate-50/70 p-3 sm:p-4">
             {selected && selectedDate ? (
               <>
                 <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
                   <div>
-                    <h4 className="text-base font-bold text-slate-900">
+                    <h4 className="text-lg font-bold text-slate-900">
                       {t.dayDetail}
                     </h4>
                     <p className="mt-0.5 text-xs text-slate-500">
@@ -453,14 +468,14 @@ export function ResetCalendar({ product, locale }: Props) {
                         {statusTitle(selectedPrimaryKind, name, locale)}
                       </div>
                     )}
-                    <ul className="space-y-3">
+                    <ul className="space-y-2">
                       {selectedEvents.map((e) => {
                         const cat = eventCategory(e)
-                        const eventPosts = postsForEvent(product, e)
+                        const eventPosts = selectedEventPosts.get(e) ?? []
                         return (
                           <li
                             key={`${e.date}-${e.kind}-${e.note}`}
-                            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
+                            className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm leading-relaxed text-slate-700"
                           >
                             <span
                               className={`mr-2 inline-flex rounded-md px-1.5 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${
@@ -481,13 +496,13 @@ export function ResetCalendar({ product, locale }: Props) {
                               {' '}
                               · {locale === 'zh' ? e.scopeZh : e.scope}
                             </span>
-                            <div className="mt-1 rr-mono text-[11px] text-slate-400">
+                            <div className="mt-1.5 rr-mono text-xs text-slate-500">
                               {formatDateTime(e.date, locale)}
                             </div>
                             {eventPosts.length > 0 && (
                               <div className="mt-2 space-y-2 border-t border-slate-100 pt-2">
                                 {eventPosts.map((p) => (
-                                  <PostCard key={p.id} post={p} locale={locale} />
+                                  <PostCard key={p.id} post={p} locale={locale} compact />
                                 ))}
                               </div>
                             )}
@@ -516,7 +531,7 @@ export function ResetCalendar({ product, locale }: Props) {
                           <div className="space-y-3">
                             {orphans.length > 0 ? (
                               orphans.map((p) => (
-                                <PostCard key={p.id} post={p} locale={locale} />
+                                <PostCard key={p.id} post={p} locale={locale} compact />
                               ))
                             ) : selectedPosts.length === 0 ? (
                               <p className="text-xs text-slate-500">{t.noUrl}</p>

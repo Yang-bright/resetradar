@@ -8,12 +8,17 @@ export const translations = {
     lastReset: '最近重置',
     estimatedNext: '预计下次',
     prob24h: '24h 示意概率',
-    windowProb: '该窗口示意概率',
+    windowProb: '该日重置概率',
+    probabilityMethod: '概率如何计算？',
+    probabilityMethodDetail:
+      '贝叶斯对数正态模型：用最近最多 10 个重置间隔更新弱先验，并计算“已等待至今仍未重置”的条件下，重置落在该日期内的后验概率。当前历史间隔样本 n={n}。',
+    probabilityHeadsUpDetail:
+      '已纳入最新公开预告：根据历史“预告发布→实际重置”的时延建立 Student-t 后验预测；预计日期取尚未落地条件下的中位时间，并计算发生于该日期的概率。历史预告时延样本 n={n}。',
     probDisclaimer: '示意概率，非官方预报',
     probDisclaimerHeadsUp: '示意概率（已因公开预告上调）· 非官方预报',
     headsUpActiveNote: '已有公开重置预告尚未兑现；日期窗口暂无法可靠推算。',
     monthEmpty: '本月暂无公开全局重置记录',
-    monthCountNote: '按北京时间日期统计',
+    monthCountNote: '按北京时间记录数统计；同一轮发卡的公告与确认合并计 1 次',
     overdue: '已越过中位窗口',
     people: '关键人物',
     posts: '相关动态',
@@ -35,16 +40,16 @@ export const translations = {
     disclaimerShort:
       '示意估算非官方承诺；个人限额 ≠ 全局重置。数据来自公开追踪，可能滞后。',
     methodologyTitle: '概率方法（透明说明）',
-    methodology: `ResetRadar 的「示意」数字不是官方预报，也不是保证。
+    methodology: `ResetRadar 的概率不是官方预报，也不是保证。
 
-1) 中位间隔：取 consecutive、计入估算的用量类重置（usage_reset / token_reset）之间的间隔天数，算中位数；样本不足时回退到文档中位值（Codex ≈ 3.3 天，来自 whenreset.dev 近 10 次）。
-2) 各「预计下次」窗口旁的示意概率：相对该窗口的接近程度（多窗口时为相对份额）；事件很少时会整体下调。
-3) 若存在尚未被后续全员重置兑现的公开预告（如 Tibo heads-up），示意概率会上调并钉在右侧；已兑现的预告只留在日历／左侧「已发生」。
-4) 近日条形：在预计日附近放一个软峰（高斯状），再夹到约 2%–55%，并标注「示意 / illustrative」。
+1) 样本：取最近最多 10 个计入估算的用量重置，计算相邻重置的间隔天数并取对数。
+2) 模型：使用贝叶斯对数正态间隔模型。文档中位间隔作为弱先验（权重相当于 2 个观测），历史样本同时更新典型间隔与波动程度。
+3) 预测：后验预测分布为 Student-t。页面百分比等于“已经等待至今仍未重置”的条件下，当前重置间隔落在所示日历日内的概率。
+4) 边界：公开预告会单独展示，但没有足够的历史命中率可校准前，不会任意给概率加分。
 
-界面会显示样本量 n；n 较小时请当作弱信号。原始时间一律 UTC ISO；中文界面显示北京时间，英文界面显示美国东部时间（ET）。`,
+界面显示历史间隔样本量 n；样本少时后验会更多依赖弱先验。原始时间一律 UTC ISO；中文界面显示北京时间，英文界面显示美国东部时间（ET）。`,
     methodologyShort:
-      '中位间隔启发式 · 条形为示意分布，非预报。样本量小时请谨慎。',
+      '贝叶斯对数正态间隔模型 · 条件后验概率；样本量小时请谨慎。',
     medianGap: '中位间隔',
     days: '天',
     fromSeed: '（文档 / 种子中位值）',
@@ -55,7 +60,7 @@ export const translations = {
     viewProfile: '查看主页',
     viewOnX: '在 X 查看',
     caveat: '注意',
-    footerSite: 'resetradar.app',
+    footerSite: 'resetradar.wiki',
     footerCopy: '重置雷达 / ResetRadar — 非官方扫描台',
     switchToEn: 'English',
     switchToZh: '中文',
@@ -110,7 +115,7 @@ export const translations = {
     bankedMonth: '发重置卡',
     affectedMonth: '受影响用户重置',
     occurred: '已发生',
-    nextEstimate: '预计下次',
+    nextEstimate: '预计下次重置',
     noneYet: '暂无',
     markerAllReset: '全员重置',
     markerCard: '发卡',
@@ -118,7 +123,8 @@ export const translations = {
     estimateMedian: '中位估算',
     estimateDocumented: '文档中位',
     estimateRolled: '推演窗口',
-    headsUpPosts: '预告 / 相关动态',
+    estimateHeadsUp: '预告模型',
+    headsUpPosts: '最新重置预告 · 已纳入概率',
   },
   en: {
     brand: 'ResetRadar',
@@ -127,12 +133,17 @@ export const translations = {
     lastReset: 'Last reset',
     estimatedNext: 'Next estimate',
     prob24h: '24h illustrative probability',
-    windowProb: 'Window illustrative probability',
+    windowProb: 'Reset probability that day',
+    probabilityMethod: 'How is this calculated?',
+    probabilityMethodDetail:
+      'Bayesian log-normal model: up to 10 recent reset intervals update a weak prior, then compute the posterior probability of a reset during that calendar day conditional on no reset having occurred yet. Current interval sample n={n}.',
+    probabilityHeadsUpDetail:
+      'Latest public heads-up included: a Student-t posterior predictive is fitted to historical heads-up-to-reset delays. The date is its conditional median; the percentage is the probability of landing that calendar day. Historical heads-up-delay sample n={n}.',
     probDisclaimer: 'Illustrative only — not an official forecast',
     probDisclaimerHeadsUp: 'Illustrative (raised by public heads-up) — not an official forecast',
     headsUpActiveNote: 'A public reset heads-up is still open; no reliable date window yet.',
     monthEmpty: 'No public global resets recorded this month',
-    monthCountNote: 'Counted by display-timezone calendar days',
+    monthCountNote: 'Event records in the display timezone; one card issuance counts once',
     overdue: 'Past median window',
     people: 'Key people',
     posts: 'Related posts',
@@ -154,16 +165,16 @@ export const translations = {
     disclaimerShort:
       'Estimates are unofficial; personal limits ≠ global resets. Public tracking may lag.',
     methodologyTitle: 'Probability methodology (transparent)',
-    methodology: `ResetRadar “illustrative” numbers are not an official forecast and not a guarantee.
+    methodology: `ResetRadar probabilities are not official forecasts or guarantees.
 
-1) Median gap: take consecutive estimate-eligible usage-class resets (usage_reset / token_reset), compute the median interval in days; if the sample is too small, fall back to a documented median (Codex ≈ 3.3d from whenreset.dev last-10).
-2) Per next-window illustrative probability: rises near that slot (relative share when multiple); sparse histories are dampened.
-3) An unfulfilled public heads-up (e.g. Tibo) raises illustrative odds and pins on the right; fulfilled heads-ups stay on the calendar / left "Occurred" column.
-4) Near-term bars: soft Gaussian-ish mass peaking near the estimate, clamped roughly 2%–55%, labeled 示意 / illustrative.
+1) Sample: use up to 10 recent estimate-eligible usage resets and take the logarithm of consecutive interval lengths.
+2) Model: a Bayesian log-normal interval model uses the documented median as a weak prior (equivalent to two observations); history updates both cadence and dispersion.
+3) Prediction: the posterior predictive distribution is Student-t. The displayed percentage is the probability that the current reset interval ends during that calendar day, conditional on no reset having occurred yet.
+4) Boundary: public heads-ups are displayed separately, but do not arbitrarily boost probability until enough historical hit-rate data exists for calibration.
 
-The UI shows sample size n; when n is small, treat bars as weak signal. All timestamps are UTC ISO; Chinese UI uses Beijing time, English UI uses US Eastern (ET).`,
+The UI shows interval sample size n. With little data the posterior relies more on the weak prior. Source timestamps are UTC ISO; Chinese uses Beijing time and English uses US Eastern (ET).`,
     methodologyShort:
-      'Median-gap heuristic · bars are illustrative, not a forecast. Low n → low confidence.',
+      'Bayesian log-normal interval model · conditional posterior probability. Low n → caution.',
     medianGap: 'Median gap',
     days: 'days',
     fromSeed: '(documented / seed median)',
@@ -174,7 +185,7 @@ The UI shows sample size n; when n is small, treat bars as weak signal. All time
     viewProfile: 'Profile',
     viewOnX: 'View on X',
     caveat: 'Caveat',
-    footerSite: 'resetradar.app',
+    footerSite: 'resetradar.wiki',
     footerCopy: '重置雷达 / ResetRadar — unofficial scan deck',
     switchToEn: 'English',
     switchToZh: '中文',
@@ -229,7 +240,7 @@ The UI shows sample size n; when n is small, treat bars as weak signal. All time
     bankedMonth: 'Reset cards',
     affectedMonth: 'Affected-user resets',
     occurred: 'Occurred',
-    nextEstimate: 'Next estimate',
+    nextEstimate: 'Next reset',
     noneYet: 'None yet',
     markerAllReset: 'All-user',
     markerCard: 'Card',
@@ -237,7 +248,8 @@ The UI shows sample size n; when n is small, treat bars as weak signal. All time
     estimateMedian: 'Median',
     estimateDocumented: 'Documented',
     estimateRolled: 'Projected',
-    headsUpPosts: 'Heads-up / related',
+    estimateHeadsUp: 'Heads-up model',
+    headsUpPosts: 'Latest reset heads-up · probability updated',
   },
 } as const
 

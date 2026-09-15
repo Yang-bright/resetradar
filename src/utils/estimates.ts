@@ -1,15 +1,11 @@
 import type { ProductData, ResetEvent } from '../data/resets'
-import { calendarDayKey, zoneForLocale } from './time'
-import type { Locale } from '../i18n/translations'
-import {
-  hasUnfulfilledHeadsUp,
-  HEADS_UP_PROB_ADD,
-  HEADS_UP_PROB_MULT,
-} from './headsUp'
-import { addDays, startOfDay } from 'date-fns'
-import { toZonedTime, fromZonedTime } from 'date-fns-tz'
+import { headsUpPosts, unfulfilledHeadsUpPosts } from './headsUp'
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000
+
+const MODEL_PRIOR_STRENGTH = 2
+const MODEL_PRIOR_ALPHA = 3
+const MODEL_PRIOR_LOG_SD = 0.45
 
 function median(values: number[]): number | null {
   if (values.length === 0) return null
@@ -19,6 +15,17 @@ function median(values: number[]): number | null {
     return (sorted[mid - 1]! + sorted[mid]!) / 2
   }
   return sorted[mid]!
+}
+function recentGapDays(product: ProductData, limit = 10): number[] {
+  const events = estimateEvents(product)
+  const gaps: number[] = []
+  for (let i = 0; i < events.length - 1 && gaps.length < limit; i++) {
+    const newer = +new Date(events[i]!.date)
+    const older = +new Date(events[i + 1]!.date)
+    const gap = (newer - older) / MS_PER_DAY
+    if (Number.isFinite(gap) && gap > 0) gaps.push(gap)
+  }
+  return gaps
 }
 
 /** usage_reset / token_reset events that count toward estimate, newest first */
@@ -45,19 +52,250 @@ export function medianGapDays(product: ProductData): {
       sampleGaps: 0,
     }
   }
-  const gaps: number[] = []
-  for (let i = 0; i < events.length - 1; i++) {
-    const newer = +new Date(events[i]!.date)
-    const older = +new Date(events[i + 1]!.date)
-    gaps.push((newer - older) / MS_PER_DAY)
-  }
   // Prefer recent cadence (last 10 gaps) when history is long — matches whenreset.dev style
-  const recent = gaps.slice(0, 10)
+  const recent = recentGapDays(product)
   const m = median(recent)
   return {
     days: m ?? product.documentedMedianDays,
     fromData: m !== null,
     sampleGaps: recent.length,
+  }
+}
+
+interface IntervalPosterior {
+  location: number
+  scale: number
+  degreesOfFreedom: number
+  sampleGaps: number
+}
+
+/**
+ * Normal-Inverse-Gamma posterior on log reset intervals. The documented
+ * median is a weak two-observation prior; observed gaps update both the
+ * location and dispersion. Its posterior predictive is Student-t.
+ */
+function intervalPosterior(product: ProductData): IntervalPosterior {
+  const gaps = recentGapDays(product)
+  const logs = gaps.map(Math.log)
+  const n = logs.length
+  const priorMedian = Math.max(0.25, product.documentedMedianDays)
+  const mu0 = Math.log(priorMedian)
+  const kappa0 = MODEL_PRIOR_STRENGTH
+  const alpha0 = MODEL_PRIOR_ALPHA
+  const beta0 = MODEL_PRIOR_LOG_SD ** 2 * (alpha0 - 1)
+
+  const mean = n > 0 ? logs.reduce((sum, value) => sum + value, 0) / n : mu0
+  const sumSquares = logs.reduce(
+    (sum, value) => sum + (value - mean) ** 2,
+    0,
+  )
+  const kappa = kappa0 + n
+  const location = (kappa0 * mu0 + n * mean) / kappa
+  const alpha = alpha0 + n / 2
+  const beta =
+    beta0 +
+    sumSquares / 2 +
+    (kappa0 * n * (mean - mu0) ** 2) / (2 * kappa)
+
+  return {
+    location,
+    scale: Math.sqrt((beta * (kappa + 1)) / (alpha * kappa)),
+    degreesOfFreedom: 2 * alpha,
+    sampleGaps: n,
+  }
+}
+
+const MAX_HEADS_UP_DELAY_DAYS = 3
+
+/**
+ * Historical public heads-ups paired to the first reset that landed within
+ * 72 hours. On log delays, the Jeffreys-prior posterior predictive is a
+ * Student-t distribution; this avoids inventing a fixed probability boost.
+ */
+function headsUpDelayPosterior(
+  product: ProductData,
+  now: Date,
+): { activeAt: Date; posterior: IntervalPosterior } | null {
+  const active = unfulfilledHeadsUpPosts(product)[0]
+  if (!active) return null
+
+  const activeTime = +new Date(active.date)
+  const resets = estimateEvents(product)
+    .map((event) => +new Date(event.date))
+    .sort((a, b) => a - b)
+  const delays = headsUpPosts(product)
+    .filter((post) => +new Date(post.date) < activeTime && +new Date(post.date) < now.getTime())
+    .map((post) => {
+      const postedAt = +new Date(post.date)
+      const landedAt = resets.find(
+        (resetAt) =>
+          resetAt > postedAt &&
+          resetAt - postedAt <= MAX_HEADS_UP_DELAY_DAYS * MS_PER_DAY,
+      )
+      return landedAt ? (landedAt - postedAt) / MS_PER_DAY : null
+    })
+    .filter((delay): delay is number => delay !== null && delay > 0)
+
+  if (delays.length < 2) return null
+  const logs = delays.map(Math.log)
+  const mean = logs.reduce((sum, value) => sum + value, 0) / logs.length
+  const sampleVariance =
+    logs.reduce((sum, value) => sum + (value - mean) ** 2, 0) /
+    (logs.length - 1)
+
+  return {
+    activeAt: new Date(activeTime),
+    posterior: {
+      location: mean,
+      scale: Math.sqrt(Math.max(0.015, sampleVariance) * (1 + 1 / logs.length)),
+      degreesOfFreedom: logs.length - 1,
+      sampleGaps: logs.length,
+    },
+  }
+}
+
+// Lanczos log-gamma approximation, sufficient for the small t-CDF used here.
+function logGamma(value: number): number {
+  const coefficients = [
+    676.5203681218851,
+    -1259.1392167224028,
+    771.3234287776531,
+    -176.6150291621406,
+    12.507343278686905,
+    -0.13857109526572012,
+    9.984369578019572e-6,
+    1.5056327351493116e-7,
+  ]
+  if (value < 0.5) {
+    return Math.log(Math.PI) - Math.log(Math.sin(Math.PI * value)) - logGamma(1 - value)
+  }
+  let x = 0.9999999999998099
+  const shifted = value - 1
+  for (let i = 0; i < coefficients.length; i++) {
+    x += coefficients[i]! / (shifted + i + 1)
+  }
+  const t = shifted + coefficients.length - 0.5
+  return (
+    0.5 * Math.log(2 * Math.PI) +
+    (shifted + 0.5) * Math.log(t) -
+    t +
+    Math.log(x)
+  )
+}
+
+function studentTCdf(value: number, degreesOfFreedom: number): number {
+  if (value === 0) return 0.5
+  if (value >= 12) return 1
+  if (value <= -12) return 0
+
+  const upper = Math.abs(value)
+  const steps = 160
+  const width = upper / steps
+  const logConstant =
+    logGamma((degreesOfFreedom + 1) / 2) -
+    logGamma(degreesOfFreedom / 2) -
+    0.5 * Math.log(degreesOfFreedom * Math.PI)
+  const density = (x: number) =>
+    Math.exp(
+      logConstant -
+        ((degreesOfFreedom + 1) / 2) *
+          Math.log1p((x * x) / degreesOfFreedom),
+    )
+
+  let area = density(0) + density(upper)
+  for (let i = 1; i < steps; i++) {
+    area += density(i * width) * (i % 2 === 0 ? 2 : 4)
+  }
+  const fromZero = (area * width) / 3
+  return Math.max(0, Math.min(1, value > 0 ? 0.5 + fromZero : 0.5 - fromZero))
+}
+
+function studentTQuantile(probability: number, degreesOfFreedom: number): number {
+  let low = -12
+  let high = 12
+  for (let i = 0; i < 48; i++) {
+    const middle = (low + high) / 2
+    if (studentTCdf(middle, degreesOfFreedom) < probability) low = middle
+    else high = middle
+  }
+  return (low + high) / 2
+}
+
+function intervalCdf(days: number, posterior: IntervalPosterior): number {
+  if (days <= 0) return 0
+  const standardized =
+    (Math.log(days) - posterior.location) / Math.max(0.05, posterior.scale)
+  return studentTCdf(standardized, posterior.degreesOfFreedom)
+}
+
+/** Conditional median landing time after an active public heads-up. */
+function headsUpExpectedReset(product: ProductData, now: Date): Date | null {
+  const evidence = headsUpDelayPosterior(product, now)
+  if (!evidence) return null
+
+  const elapsedDays = Math.max(
+    1 / 1440,
+    (now.getTime() - evidence.activeAt.getTime()) / MS_PER_DAY,
+  )
+  const elapsedCdf = intervalCdf(elapsedDays, evidence.posterior)
+  const conditionalMedianCdf = elapsedCdf + (1 - elapsedCdf) * 0.5
+  const quantile = studentTQuantile(
+    conditionalMedianCdf,
+    evidence.posterior.degreesOfFreedom,
+  )
+  const delayDays = Math.exp(
+    evidence.posterior.location + evidence.posterior.scale * quantile,
+  )
+  const predicted = new Date(
+    evidence.activeAt.getTime() + delayDays * MS_PER_DAY,
+  )
+  return predicted > now ? predicted : new Date(now.getTime() + 60 * 60 * 1000)
+}
+
+export interface WindowProbability {
+  probability: number
+  sampleGaps: number
+  basis: 'cadence' | 'heads-up'
+}
+
+/**
+ * Posterior probability that the current reset interval ends inside a future
+ * time window, conditional on no reset having occurred by `now`.
+ */
+export function resetProbabilityInWindow(
+  product: ProductData,
+  windowStart: Date,
+  windowEnd: Date,
+  now: Date = new Date(),
+): WindowProbability {
+  const last = lastResetDate(product)
+  const headsUp = headsUpDelayPosterior(product, now)
+  const posterior = headsUp?.posterior ?? intervalPosterior(product)
+  const origin = headsUp?.activeAt ?? last
+  const basis = headsUp ? 'heads-up' : 'cadence'
+  if (!origin || windowEnd <= now || windowEnd <= windowStart) {
+    return { probability: 0, sampleGaps: posterior.sampleGaps, basis }
+  }
+
+  const elapsedDays = Math.max(1 / 1440, (now.getTime() - origin.getTime()) / MS_PER_DAY)
+  const lowerDays = Math.max(
+    elapsedDays,
+    (windowStart.getTime() - origin.getTime()) / MS_PER_DAY,
+  )
+  const upperDays = (windowEnd.getTime() - origin.getTime()) / MS_PER_DAY
+  if (upperDays <= lowerDays) {
+    return { probability: 0, sampleGaps: posterior.sampleGaps, basis }
+  }
+
+  const survived = Math.max(1e-6, 1 - intervalCdf(elapsedDays, posterior))
+  const mass = Math.max(
+    0,
+    intervalCdf(upperDays, posterior) - intervalCdf(lowerDays, posterior),
+  )
+  return {
+    probability: Math.max(0, Math.min(0.99, mass / survived)),
+    sampleGaps: posterior.sampleGaps,
+    basis,
   }
 }
 
@@ -75,7 +313,7 @@ export function estimatedNextReset(product: ProductData): Date | null {
   return new Date(last.getTime() + days * MS_PER_DAY)
 }
 
-export type EstimateKind = 'median' | 'documented' | 'rolled'
+export type EstimateKind = 'median' | 'documented' | 'rolled' | 'heads-up'
 
 export interface FutureEstimate {
   date: Date
@@ -113,6 +351,15 @@ export function futureResetEstimates(
 ): FutureEstimate[] {
   const last = lastResetDate(product)
   if (!last) return []
+
+  const headsUpEstimate = headsUpExpectedReset(product, now)
+  if (headsUpEstimate) {
+    const alertEstimate: FutureEstimate = {
+      date: headsUpEstimate,
+      kind: 'heads-up',
+    }
+    return [alertEstimate].slice(0, limit)
+  }
 
   const { days, fromData, sampleGaps } = medianGapDays(product)
   const out: FutureEstimate[] = []
@@ -164,154 +411,4 @@ export function futureResetEstimates(
     .filter((f) => f.date.getTime() > now.getTime())
     .sort((a, b) => a.date.getTime() - b.date.getTime())
     .slice(0, limit)
-}
-
-/**
- * Illustrative probability for one specific next-window estimate.
- * Higher when that slot is nearer; when multiple slots exist, shares are
- * relative so each row has its own figure (not a global 24h block).
- * Not an official forecast.
- */
-export function estimateSlotProbability(
-  product: ProductData,
-  estimate: FutureEstimate,
-  now: Date = new Date(),
-  siblings: FutureEstimate[] = [],
-): number {
-  const { days: medianDays } = medianGapDays(product)
-  const events = estimateEvents(product)
-  const sparse = events.length < 2
-  const sigma = Math.max(1.2, (medianDays > 0 ? medianDays : 3) * 0.4)
-
-  const daysUntil = (estimate.date.getTime() - now.getTime()) / MS_PER_DAY
-  if (daysUntil <= 0) {
-    return sparse ? 0.32 : 0.52
-  }
-
-  // Soft peak near the window
-  let p = 0.5 * Math.exp(-(daysUntil * daysUntil) / (2 * sigma * sigma))
-  p = Math.max(0.06, p)
-
-  // Relative share among concurrent estimate rows
-  const pool = siblings.length > 0 ? siblings : [estimate]
-  if (pool.length > 1) {
-    const weights = pool.map((e) => {
-      const d = Math.max(0.2, (e.date.getTime() - now.getTime()) / MS_PER_DAY)
-      return Math.exp(-(d * d) / (2 * sigma * sigma))
-    })
-    const sum = weights.reduce((a, b) => a + b, 0) || 1
-    const idx = pool.findIndex(
-      (e) =>
-        e.kind === estimate.kind &&
-        e.date.getTime() === estimate.date.getTime(),
-    )
-    const share = (idx >= 0 ? weights[idx]! : weights[0]!) / sum
-    // Blend proximity with relative share → distinct per-row figures
-    p = Math.max(0.05, Math.min(0.58, 0.1 + share * 0.48 + p * 0.25))
-  }
-
-  if (sparse) p *= 0.7
-
-  // Public unfulfilled heads-up (e.g. Tibo) raises illustrative odds — still capped.
-  if (hasUnfulfilledHeadsUp(product)) {
-    p = p * HEADS_UP_PROB_MULT + HEADS_UP_PROB_ADD
-  }
-
-  return Math.max(0.03, Math.min(0.7, p))
-}
-
-/** @deprecated Prefer estimateSlotProbability — kept for any residual callers */
-export function probability24h(product: ProductData, now: Date = new Date()): number {
-  const futures = futureResetEstimates(product, now, 1)
-  if (futures[0]) {
-    return estimateSlotProbability(product, futures[0], now, futures)
-  }
-  return 0.08
-}
-
-/** @deprecated Prefer futureResetEstimates — past windows must not be shown in UI */
-export function isOverdue(product: ProductData, now: Date = new Date()): boolean {
-  const next = estimatedNextReset(product)
-  if (!next) return false
-  return now.getTime() > next.getTime()
-}
-
-export interface DayPrediction {
-  /** Calendar day key in display TZ */
-  dayKey: string
-  date: Date
-  probability: number
-}
-
-/**
- * Spread a soft probability mass across upcoming calendar days, peaking near
- * the estimated next reset. Distinct from the single 24h heuristic — used for
- * the prediction strip in the status area.
- */
-export function dailyPredictions(
-  product: ProductData,
-  now: Date,
-  locale: Locale,
-  count = 5,
-): DayPrediction[] {
-  const futures = futureResetEstimates(product, now, 1)
-  const next = futures[0]?.date ?? null
-  const { days: medianDays } = medianGapDays(product)
-  const events = estimateEvents(product)
-  const sparse = events.length < 2
-  const tz = zoneForLocale(locale)
-
-  const zonedNow = toZonedTime(now, tz)
-  const startLocal = startOfDay(zonedNow)
-
-  const weights: number[] = []
-  const dates: Date[] = []
-
-  for (let i = 0; i < count; i++) {
-    const localDay = addDays(startLocal, i)
-    const utcNoon = fromZonedTime(
-      new Date(
-        localDay.getFullYear(),
-        localDay.getMonth(),
-        localDay.getDate(),
-        12,
-        0,
-        0,
-      ),
-      tz,
-    )
-    dates.push(utcNoon)
-
-    let w = 0.08
-    if (next && medianDays > 0) {
-      const distDays =
-        (utcNoon.getTime() - next.getTime()) / MS_PER_DAY
-      // Gaussian-ish peak around estimated next
-      const sigma = Math.max(0.8, medianDays * 0.35)
-      w = Math.exp(-(distDays * distDays) / (2 * sigma * sigma))
-      if (i <= 1 && estimatedNextReset(product) && now.getTime() > estimatedNextReset(product)!.getTime()) {
-        w *= 1.35
-      }
-    }
-    if (sparse) w *= 0.7
-    if (hasUnfulfilledHeadsUp(product)) w *= HEADS_UP_PROB_MULT
-    weights.push(Math.max(0.02, w))
-  }
-
-  const sum = weights.reduce((a, b) => a + b, 0) || 1
-  // Scale so peak day lands in a readable 15–55% band (illustrative)
-  const peak = Math.max(...weights)
-  const heads = hasUnfulfilledHeadsUp(product)
-  const targetPeak = sparse ? (heads ? 0.3 : 0.22) : heads ? 0.48 : 0.38
-  const scale = peak > 0 ? targetPeak / peak : 1
-
-  return dates.map((date, i) => {
-    const raw = (weights[i]! / sum) * (sum * scale)
-    const probability = Math.max(0.02, Math.min(0.55, raw))
-    return {
-      dayKey: calendarDayKey(date, locale),
-      date,
-      probability,
-    }
-  })
 }

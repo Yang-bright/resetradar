@@ -3,6 +3,7 @@ import { LocaleToggle } from './components/LocaleToggle'
 import { ProductTabs } from './components/ProductTabs'
 import { ResetCalendar } from './components/ResetCalendar'
 import { StatusHero } from './components/StatusHero'
+import { AdSlot } from './components/AdSlot'
 import { products, type ProductId } from './data/resets'
 import { useLocale } from './hooks/useLocale'
 import { useNow } from './hooks/useNow'
@@ -18,17 +19,14 @@ export default function App() {
     [active],
   )
 
-  const caveat =
-    locale === 'zh' ? activeProduct.caveatZh : activeProduct.caveat
-
   return (
     <div className="rr-radar-grid relative min-h-dvh overflow-hidden bg-[#f4f5f8] text-slate-800">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="rr-scanline absolute inset-x-0 top-0 h-40 opacity-30" />
       </div>
 
-      <div className="relative mx-auto max-w-6xl px-4 pb-16 pt-8 sm:px-6">
-        <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
+      <div className="relative mx-auto max-w-7xl px-3 pb-10 pt-5 sm:px-5">
+        <header className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
             <div className="mb-2 flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-md border border-cyan-500/30 bg-cyan-50 px-2.5 py-0.5 rr-mono text-[10px] font-semibold tracking-[0.22em] text-cyan-700">
@@ -42,10 +40,10 @@ export default function App() {
                 {zoneHint(locale)}
               </span>
             </div>
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
               {t.brand}
             </h1>
-            <p className="mt-2 max-w-2xl text-sm text-slate-600 sm:text-base">
+            <p className="mt-1 max-w-2xl text-xs text-slate-600 sm:text-sm">
               {t.tagline}
             </p>
           </div>
@@ -56,28 +54,23 @@ export default function App() {
           />
         </header>
 
-        <div className="mb-6">
+        <div className="mb-4">
           <ProductTabs active={active} locale={locale} onChange={setActive} />
         </div>
 
-        {caveat && (
-          <p className="mb-5 text-xs leading-relaxed text-amber-800/80">
-            <span className="font-semibold text-amber-800">{t.caveat}: </span>
-            {caveat}
-          </p>
-        )}
-
         {/* Hero: last reset | next prediction (same row) + related posts */}
-        <div className="mb-8">
+        <div className="mb-4">
           <StatusHero product={activeProduct} locale={locale} now={now} />
         </div>
 
         {/* Calendar → click for day detail + related posts */}
-        <div className="mb-10">
+        <div className="mb-6">
           <ResetCalendar product={activeProduct} locale={locale} />
         </div>
 
-        <footer className="border-t border-slate-200 pt-6 text-center text-xs text-slate-500">
+        <AdSlot locale={locale} />
+
+        <footer className="border-t border-slate-200 pt-4 text-center text-[11px] text-slate-500">
           <p className="mx-auto max-w-2xl leading-relaxed text-slate-500">
             {t.disclaimerShort}
           </p>

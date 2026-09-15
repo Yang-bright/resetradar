@@ -1,4 +1,6 @@
 import { formatInTimeZone } from 'date-fns-tz'
+import { fromZonedTime, toZonedTime } from 'date-fns-tz'
+import { addDays, startOfDay } from 'date-fns'
 import type { Locale } from '../i18n/translations'
 
 export const TZ_ZH = 'Asia/Shanghai'
@@ -46,30 +48,26 @@ export function formatDate(iso: string | Date, locale: Locale): string {
   return formatInTimeZone(date, tz, pattern)
 }
 
-/** Rough day-part for estimate display (no clock precision). */
-function dayPartLabel(iso: string | Date, locale: Locale): string {
-  const date = typeof iso === 'string' ? new Date(iso) : iso
-  const tz = zoneForLocale(locale)
-  const hour = Number(formatInTimeZone(date, tz, 'H'))
-  if (locale === 'zh') {
-    if (hour < 12) return '上午'
-    if (hour < 18) return '下午'
-    return '晚上'
-  }
-  if (hour < 12) return 'morning'
-  if (hour < 18) return 'afternoon'
-  return 'evening'
-}
-
 /**
- * Next-estimate display: date only, or date + rough period — never HH:mm.
- * e.g. 9月15日 上午 / Sep 15 morning
+ * Next-estimate display: date only. The source data does not support a
+ * reliable time-of-day prediction, so avoid presenting false precision.
  */
 export function formatEstimateDate(iso: string | Date, locale: Locale): string {
+  return formatDate(iso, locale)
+}
+
+/** UTC boundaries of the estimate's displayed calendar day. */
+export function estimateDayWindow(
+  iso: string | Date,
+  locale: Locale,
+): { start: Date; end: Date } {
   const date = typeof iso === 'string' ? new Date(iso) : iso
-  const base = formatDate(date, locale)
-  const part = dayPartLabel(date, locale)
-  return `${base} ${part}`
+  const tz = zoneForLocale(locale)
+  const localStart = startOfDay(toZonedTime(date, tz))
+  return {
+    start: fromZonedTime(localStart, tz),
+    end: fromZonedTime(addDays(localStart, 1), tz),
+  }
 }
 
 export function formatMonthTitle(year: number, monthIndex: number, locale: Locale): string {

@@ -2,11 +2,11 @@ import type { Post, ProductData } from '../data/resets'
 import type { Locale } from '../i18n/translations'
 import { translations } from '../i18n/translations'
 import {
-  estimateSlotProbability,
   futureResetEstimates,
   lastResetDate,
+  resetProbabilityInWindow,
 } from '../utils/estimates'
-import { formatCountdown, formatEstimateDate } from '../utils/time'
+import { estimateDayWindow, formatEstimateDate } from '../utils/time'
 import { PostCard } from './PostCard'
 
 interface Props {
@@ -36,17 +36,24 @@ export function PredictionPanel({
   const futures = futureResetEstimates(product, now, 2).filter(
     (f) => f.date.getTime() > now.getTime(),
   )
+  const firstWindow = futures[0] ? estimateDayWindow(futures[0].date, locale) : null
+  const primaryProbability = firstWindow
+    ? resetProbabilityInWindow(product, firstWindow.start, firstWindow.end, now)
+    : null
 
   if (!last) return null
 
   const shell = embedded
-    ? 'flex h-full min-h-0 flex-col rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3.5 sm:px-5'
+    ? 'flex min-h-0 flex-col rounded-xl border border-slate-200 bg-slate-50 px-4 py-3'
     : 'flex flex-col rounded-2xl border border-slate-200 bg-white px-4 py-3.5 shadow-sm sm:px-5'
 
   return (
     <section className={shell}>
-      <div className="text-[11px] font-medium uppercase tracking-wider text-slate-500">
-        {t.nextEstimate}
+      <div className="flex items-center gap-2">
+        <span className="h-2 w-2 rounded-full bg-cyan-500 shadow-[0_0_10px_rgba(6,182,212,0.55)]" />
+        <h3 className="text-base font-extrabold tracking-tight text-slate-900 sm:text-lg">
+          {t.nextEstimate}
+        </h3>
       </div>
 
       {futures.length === 0 ? (
@@ -61,19 +68,21 @@ export function PredictionPanel({
           )}
         </div>
       ) : (
-        <ul className="mt-2 space-y-3">
+        <ul className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
           {futures.map((est) => {
-            const countdown = formatCountdown(est.date, now, locale)
-            const p = estimateSlotProbability(product, est, now, futures)
-            const pct = Math.round(p * 100)
+            const window = estimateDayWindow(est.date, locale)
+            const result = resetProbabilityInWindow(
+              product,
+              window.start,
+              window.end,
+              now,
+            )
+            const pct = Math.round(result.probability * 100)
             return (
-              <li key={`${est.kind}-${est.date.toISOString()}`}>
+              <li key={`${est.kind}-${est.date.toISOString()}`} className="rounded-lg border border-slate-200 bg-white p-2.5">
                 <div className="text-base font-semibold text-slate-800 sm:text-lg">
                   {formatEstimateDate(est.date, locale)}
                 </div>
-                {countdown && !countdown.overdue && (
-                  <p className="mt-1 text-xs text-slate-500">{countdown.text}</p>
-                )}
                 <div className="mt-2 flex items-baseline justify-between gap-2">
                   <span className="text-[10px] font-medium uppercase tracking-wider text-slate-500">
                     {t.windowProb}
@@ -85,7 +94,7 @@ export function PredictionPanel({
                 <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-slate-200">
                   <div
                     className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-fuchsia-500"
-                    style={{ width: `${Math.max(4, pct)}%` }}
+                    style={{ width: `${Math.max(2, pct)}%` }}
                   />
                 </div>
               </li>
@@ -95,9 +104,20 @@ export function PredictionPanel({
       )}
 
       {futures.length > 0 && (
-        <p className="mt-3 text-[10px] leading-relaxed text-slate-400">
-          {upcomingPosts.length > 0 ? t.probDisclaimerHeadsUp : t.probDisclaimer}
-        </p>
+        <details className="group mt-3 text-[10px] leading-relaxed text-slate-500">
+          <summary className="cursor-pointer select-none font-medium text-cyan-700 marker:text-slate-400">
+            {t.probabilityMethod}
+          </summary>
+          <p className="mt-1.5 rounded-md border border-slate-200 bg-white/80 p-2">
+            {(primaryProbability?.basis === 'heads-up'
+              ? t.probabilityHeadsUpDetail
+              : t.probabilityMethodDetail
+            ).replace(
+              '{n}',
+              String(primaryProbability?.sampleGaps ?? 0),
+            )}
+          </p>
+        </details>
       )}
 
       {upcomingPosts.length > 0 && (
@@ -105,7 +125,7 @@ export function PredictionPanel({
           <div className="mb-2 text-[11px] font-medium uppercase tracking-wider text-slate-500">
             {t.headsUpPosts}
           </div>
-          <div className="space-y-3">
+          <div className="space-y-2">
             {upcomingPosts.map((p) => (
               <PostCard key={p.id} post={p} locale={locale} />
             ))}
